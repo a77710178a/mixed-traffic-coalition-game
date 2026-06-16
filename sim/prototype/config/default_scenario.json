@@ -1,0 +1,62 @@
+{
+  "scenario_name": "four_leg_unsignalized_p0",
+  "step_length": 0.1,
+  "speed_limit_mps": 11.11,
+  "approach_length_m": 120.0,
+  "incoming_lane_count": 1,
+  "outgoing_lane_count": 1,
+  "traffic_volumes_veh_per_hour_per_approach": {
+    "low": 300,
+    "medium": 600,
+    "high": 900
+  },
+  "turning_ratio": {
+    "left": 0.25,
+    "through": 0.5,
+    "right": 0.25
+  },
+  "hdv_behavior_profiles": {
+    "conservative": {
+      "tau": 1.6,
+      "accel": 1.8,
+      "decel": 3.0,
+      "minGap": 3.0,
+      "sigma": 0.3
+    },
+    "normal": {
+      "tau": 1.1,
+      "accel": 2.6,
+      "decel": 4.0,
+      "minGap": 2.5,
+      "sigma": 0.5
+    },
+    "aggressive": {
+      "tau": 0.7,
+      "accel": 3.2,
+      "decel": 4.5,
+      "minGap": 1.8,
+      "sigma": 0.7
+    }
+  },
+  "hdv_behavior_mix": {
+    "conservative": 0.25,
+    "normal": 0.5,
+    "aggressive": 0.25
+  },
+  "conflict_zones": [
+    {
+      "zone_id": "center",
+      "center_x": 0.0,
+      "center_y": 0.0,
+      "radius_m": 12.0
+    }
+  ],
+  "label_thresholds": {
+    "epsilon_t_s": 0.5,
+    "yield_decel_mps2": 1.5,
+    "pre_zone_window_s": 3.0,
+    "high_confidence_entry_diff_s": 1.0,
+    "pair_time_window_s": 6.0
+  }
+}
+

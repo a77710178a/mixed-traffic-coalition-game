@@ -1,0 +1,74 @@
+project:
+  name: mixed-traffic-coalition-game-unsignalized-intersection
+  stage: high_risk_literature_deep_read
+  created_at: 2026-06-16
+  language: zh-CN
+
+target:
+  primary_venue: Transportation Research Part C
+  backup_venues:
+    - IEEE Transactions on Intelligent Transportation Systems
+    - IEEE Transactions on Intelligent Vehicles
+    - Transportmetrica B
+  paper_type: research_article
+
+idea:
+  working_title_en: Interaction-Aware Deep Prediction and Fair Coalition Allocation for Mixed Traffic at Unsignalized Intersections
+  working_title_zh: 面向混行无信号交叉口的交互感知深度预测与公平联盟分配方法
+  central_claim_status: draft
+  central_claim: >
+    An interaction-aware prediction module can estimate HDV intention and risk, enabling conflict-zone-driven,
+    risk-constrained fair coalition allocation to coordinate CAVs and uncertain HDVs at unsignalized intersections
+    more safely and fairly than arrival-order, rule-based, learning-only, opinion-consensus, or generic game-theoretic coordination methods.
+  main_contribution: interaction_aware_prediction_guided_fair_coalition_allocation
+  support_modules:
+    - deep_learning_based_hdv_intention_and_risk_prediction
+    - conflict_zone_based_local_coalition_formation
+    - vehicle_infrastructure_information_support
+    - fairness_aware_passing_right_allocation
+
+evidence:
+  simulator: SUMO
+  planned_metrics:
+    - average_delay
+    - throughput
+    - stop_count
+    - TTC
+    - PET
+    - fuel_or_energy_consumption
+    - max_waiting_time
+    - fairness_gini
+  planned_baselines:
+    - FCFS
+    - rule_based_yielding
+    - learning_prediction_plus_FCFS
+    - learning_prediction_plus_non_cooperative_game
+    - opinion_consensus_style_baseline
+    - generic_game_theoretic_baseline
+    - non_cooperative_game
+    - centralized_optimization_or_MPC
+    - learning_only_policy_if_feasible
+    - coalition_without_risk_constraint
+    - coalition_without_learning_prediction
+    - coalition_without_fairness_allocation
+
+open_questions:
+  - Which specific unsignalized intersection geometry should be used first?
+  - Should the HDV prediction module use LSTM, GRU, GNN, Transformer, or a lightweight hybrid model?
+  - Should the HDV uncertainty model be calibrated from public trajectory data or simulated behavior classes?
+  - Should the paper emphasize theoretical stability, simulation performance, or deployment realism?
+  - What is the available timeline for literature review, simulation, and writing?
+
+artifacts:
+  idea_brief: docs/idea/idea_brief.md
+  experiment_blueprint: docs/experiments/experiment_blueprint.md
+  work_plan: docs/work_plan.md
+  literature_search: docs/literature/literature-search-20260616-mixed-traffic-coalition-game/papers.md
+  high_risk_deep_read_plan: docs/literature/high_risk_deep_read_plan.md
+  learning_module_design: docs/idea/learning_module_design.md
+  deep_read_matrix: docs/literature/deep_read_matrix.md
+  formal_problem_formulation: docs/method/formal_problem_formulation.md
+  prediction_and_allocation_design: docs/method/prediction_and_allocation_design.md
+  sumo_prototype_plan: docs/experiments/sumo_prototype_plan.md
+  remote_sumo_smoke_test: docs/experiments/remote_sumo_smoke_test_20260616.md
+  sumo_prototype_remote: /public/home/xiaohei_0/hx/my_paper01/sim/prototype

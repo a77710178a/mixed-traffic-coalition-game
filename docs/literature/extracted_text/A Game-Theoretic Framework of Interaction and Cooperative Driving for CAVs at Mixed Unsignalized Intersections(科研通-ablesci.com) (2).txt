@@ -1,0 +1,1718 @@
+
+
+===== PAGE 1 =====
+1524 IEEE INTERNET OF THINGS JOURNAL, VOL. 13, NO. 1, 1 JANUARY 2026
+A Game-Theoretic Framework of Interaction and
+Cooperative Driving for CA Vs at Mixed
+Unsignalized Intersections
+Yiming Cui
+ , Shiyu Fang
+ , Qian Chen, Yafei Wang
+ , Member, IEEE, Peng Hang
+ , Senior Member, IEEE,
+and Jian Sun
+ , Senior Member, IEEE
+Abstract—During the ongoing development and proliferation
+of autonomous driving, human-driven vehicles (HDVs) and
+connected automated vehicles (CA Vs) will coexist in mixed
+traﬃc environments for the foreseeable future. However, current
+autonomous driving systems (ADSs) often face challenges in
+ensuring optimal safety and e ﬃciency, particularly in complex
+conﬂict scenarios. To address these shortcomings and improve
+cooperation in mixed tra ﬃc environments, this article presents
+a game-theoretic decision-making method. The proposed frame-
+work accounts for both CA V–CA V cooperation and CA V–HDV
+interaction in mixed tra ﬃc at unsignalized intersections. It
+introduces a parameter updating mechanism based on twin
+games to dynamically adjust HDVs’ parameters to better predict
+and respond to variable human driving behaviors. To validate
+the eﬀectiveness of the proposed cooperative driving framework,
+the comparative analysis of its safety and e ﬃciency with other
+established methods is conducted. The results demonstrate that
+our method successfully ensures both safety and e ﬃciency in
+mixed traﬃc environments. Compared with reinforcement learn-
+ing (RL) approaches such as I-PPO, it achieves a 35%–55%
+improvement in success rate while maintaining decision stabil-
+ity and tra ﬃc e ﬃciency. In contrast to methods that enforce
+strict safety guarantees, our approach improves the average
+vehicle speed by 0.1–0.6 m /s and the average CA V speed by
+0.7–1.7 m /s, without compromising safety. Additionally, several
+validation experiments are conducted using a hardware-in-the-
+loop and human-in-the-loop experimental platform, conﬁrming
+the practical applicability of the method.
+Index Terms—Connected automated vehicles (CA Vs), cooper-
+ative decision-making, twin game, unsignalized intersection.
+I. I NTRODUCTION
+W
+ITH the rapid advancement of autonomous driving and
+connectivity technologies, the number of self-driving
+Received 3 August 2025; accepted 2 November 2025. Date of publication
+5 November 2025; date of current version 23 December 2025. This work was
+supported in part by the State Key Laboratory of Intelligent Transportation
+System under Project 2024-A002, in part by the National Natural Science
+Foundation of China under Grant 52472451, in part by Shanghai Scientiﬁc
+Innovation Foundation under Grant 23DZ1203400, and in part by the Funda-
+mental Research Funds for the Central Universities. (Corresponding author:
+Peng Hang.)
+Yiming Cui, Shiyu Fang, Qian Chen, Peng Hang, and Jian Sun are
+with the Key Laboratory of Road and Tra ﬃc Engineering of the State,
+Ministry of Education, Tongji University, Shanghai 201804, China, and also
+with the State Key Laboratory of Intelligent Transportation System, Bei-
+jing 100088, China (e-mail: 2310796@tongji.edu.cn; 2111219@tongji.edu.cn;
+2331650@tongji.edu.cn; hangpeng@tongji.edu.cn; sunjian@tongji.edu.cn).
+Yafei Wang is with the School of Mechanical Engineering, Shanghai Jiao
+Tong University, Shanghai 200240, China (e-mail: wyfjlu@sjtu.edu.cn).
+Digital Object Identiﬁer 10.1109 /JIOT.2025.3629356
+cars will increasingly rise, leading to a long-term mixed tra ﬃc
+environment with both human-driven vehicles (HDVs) and
+connected automated vehicles (CA Vs) [1], [2]. The key to
+enhancing the safety and e ﬃciency of individual vehicles and
+the overall traﬃc system lies in accurately interacting between
+CA V and HDV , as well as achieving e ﬃcient cooperation
+among CA Vs [3].
+However, current pilot applications of autonomous driving
+frequently encounter problems all around the world, and
+autonomous vehicles (A Vs) have not yet demonstrated the
+safety and e ﬃciency advantages expected. According to the
+U.S. NHTSA [4], 392 accidents involving Level 2 autonomous
+driving systems (ADSs) were reported over a ten-month period
+between 2021 and 2022. Current A V agents have limited
+intelligence and struggle to handle complex conﬂict scenarios
+eﬀectively [5]. On the one hand, interactions between A Vs
+and HDVs tend to be overly conservative, lacking adaptive
+adjustment capabilities [6]. On the other hand, A Vs lack
+coordinated decision-making abilities with other A Vs, leading
+to more challenging congestion and deadlock situations.
+The SAE J3216 standard categorizes cooperative driving
+automation (CDA) into four levels: status sharing, intent shar-
+ing, agreement seeking, and prescriptive [7]. The development
+of vehicle-to-vehicle cooperation and enabling technologies
+oﬀers new solutions to address A V interaction challenges in
+complex environments [8].
+Existing research on vehicle cooperation primarily focuses
+on scenarios that involve only CA Vs. These can be categorized
+into reservation-, optimization-, reinforcement learning (RL)-,
+and game-based methods. Moreover, the introduction of HDVs
+presents new challenges, necessitating di ﬀerent characteriza-
+tions and considerations of HDVs in these methods [9].
+The reservation-based approach is the most widely applied
+method for resolving tra ﬃc conﬂicts in vehicle cooperation
+scenarios, allocating the spatial resources of conﬂict zones
+over speciﬁc time intervals [10]. The basic ﬁrst-come ﬁrst-
+serve (FCFS) method, which allows only one vehicle to enter
+the conﬂict zone at a time, generally results in relatively
+lower overall tra ﬃc e ﬃciency [11], [12]. To improve the
+eﬃciency, tree or graph-based structures are employed to
+search for vehicle passing orders to facilitate sequential vehicle
+passage [13], [14]. Xu et al. [15] proposed a virtual rotational
+projection method at intersections to simplify the vehicles on
+the entry lanes by projecting them into a 1-D space and then
+2327-4662 © 2025 IEEE. All rights reserved, including rights for text and data mining, and training of artiﬁcial intelligence and
+similar technologies. Personal use is permitted, but republication /redistribution requires IEEE permission.
+See https://www.ieee.org/publications/rights/index.html for more information.
+Authorized licensed use limited to: Cornell University Library. Downloaded on March 06,2026 at 08:06:00 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+===== PAGE 2 =====
+CUI et al.: GAME-THEORETIC FRAMEWORK OF INTERACTION AND COOPERATIVE DRIVING FOR CA Vs 1525
+integrating passing topology to generate a conﬂict-free passing
+sequence tree. Although the resource reservation approach is
+conceptually clear and computationally straightforward, it may
+fail under high-density tra ﬃc ﬂow. Additionally, in mixed
+traﬃc environments, human drivers’ limited compliance with
+predeﬁned rules further complicates the determination and
+implementation of passing sequences.
+The optimization-based approach formulates an optimiza-
+tion problem aimed at resolving vehicle conﬂicts and achieving
+passing tasks with objectives such as minimizing travel time
+or delay [16], [17]. Another common strategy involves a
+bi-level planning framework for intersections, where the upper
+level determines the timing windows and passing sequence
+based on spatiotemporal conﬂict relationships and the lower
+level optimizes individual trajectories and vehicle actions [18],
+[19]. Although the optimization-based approach can address
+conﬂicts in complex environments, it signiﬁcantly increases
+the complexity of solutions, posing challenges for real-time
+implementation [20].
+In recent years, with the development of machine learning
+theories and applications, RL has emerged as a popular method
+for solving vehicle-to-vehicle cooperation issues [21], [22].
+RL aims to enable agents to learn optimal action strate-
+gies through interactions with the environment, considering
+long-term beneﬁts. Several studies have applied multiagent
+reinforcement learning (MARL) to model multivehicle tra ﬃc
+systems, demonstrating impressive results in scenarios such as
+lane changing [23], merging [24], and intersections [25]. Due
+to the inherent limitations of RL, concerns remain regarding
+its safety performance. Some RL-based approaches have made
+additional considerations for safety and robustness, especially
+under adversarial scenarios. Certain methods aim to ensure the
+probability of generating safe policies during the optimization
+process by introducing safety thresholds and Lagrangian con-
+straints within the RL algorithm itself [26]. Meanwhile, other
+studies on decision-making for autonomous driving reduce
+collision rates by incorporating additional safety enhancement
+modules into the decision-making framework [27], [28]. How-
+ever, RL still faces challenges such as the subjective design of
+reward functions, di ﬃculties in ensuring complete safety, and
+limited scalability across diverse scenarios [29].
+Game theory is rooted in human decision-making logic,
+which makes interactive behaviors more interpretable and
+enables eﬀectively addressing conﬂict issues in complex traf-
+ﬁc environments. Cooperative game theory methods have
+been applied in scenarios such as intersections and ramp
+merging in fully CA V environments [30]. Various nonco-
+operative game methods, such as Stackelberg games and
+level-k games [31], have also been used in mandatory lane
+changing [32], [33], intersections [34], and merging zone [35],
+[36] among other interactive decision-making scenarios [37],
+[38]. Game theory, by considering the interdependencies of
+decisions, can replicate human decision-making logic, thus
+oﬀering good adaptability in human–machine mixed driving
+environments [39].
+Currently, research predominantly focuses on either the
+cooperation among vehicles in scenarios characterized by
+100% penetration of A Vs or the interaction between CA V and
+HDVs from the perspective of a single CA V . However, there is
+a notable lack of comprehensive analysis regarding the interac-
+tions between CA Vs and HDVs in mixed traﬃc environments.
+Furthermore, most studies treat HDVs as dynamic obstacles
+or model them using simplistic car-following models. This
+approach fails to adequately capture the dynamic interactive
+behaviors of HDVs, thereby limiting the accuracy in depicting
+interactions between CA Vs and HDVs e ﬀectively. Finally,
+autonomous driving technology is developing rapidly and has
+practical application needs. Most existing research methods are
+primarily veriﬁed through numerical simulations and analysis
+of simulation results, lacking experimental implementations
+that are essential for real-world applications.
+A Vs interacting with HDVs often make erroneous decisions
+leading to safety and e ﬃciency issues due to inaccurate
+predictions and judgments of human driving behavior [40],
+[41]. This predicament stems from the diversity of individ-
+ual driving behaviors and the behavioral uncertainty during
+interactions among human drivers. However, human driver
+models constructed through calibrated parameters essentially
+assign ﬁxed labels to drivers, which proves insu ﬃcient for
+capturing the dynamic uncertainties inherent in human drivers’
+interactive behaviors.
+To address the limitations in existing research and enhance
+safe and eﬃcient cooperation in mixed tra ﬃc environments, a
+cooperative decision-making method based on game theory is
+introduced. This method addresses tra ﬃc conﬂicts in complex
+interactive scenarios, with intersections as the primary case
+study for demonstration. We propose a cooperative decision-
+making model for CA Vs based on cooperative game theory
+and develop an interaction model between CA Vs and HDVs
+using the Stackelberg game framework, which e ﬀectively
+captures the dynamic interaction features of HDVs. Models
+are integrated through a bi-level programming approach to
+establish a comprehensive interactive decision-making model
+for mixed tra ﬃc scenarios. Our contributions are shown as
+follows.
+1) The proposed cooperative driving framework involves
+not only the interaction between CA Vs and HDVs
+but also the cooperation among CA Vs, aligning more
+closely with real mixed driving scenarios and e ﬀec-
+tively addressing the safety and e ﬃciency challenges in
+autonomous driving.
+2) This study takes fully account of HDV’s uncertainty
+during the dynamical interaction process by dynamically
+identifying and adjusting parameter values related to the
+weight of reward function according to the results of the
+twin game.
+3) A comprehensive experimental platform, integrating
+human-in-the-loop and hardware-in-the-loop testing, has
+been established to validate the proposed model’s ability
+to address the uncertainties of human driver interactions
+and the feasibility of deploying the algorithms in real
+vehicles.
+The rest of this article is organized as follows. Section II
+identiﬁes research questions, illustrates the cooperative driv-
+ing framework for mixed tra ﬃc, and introduces the typical
+unsignalized intersections scenario. Section III introduces the
+Authorized licensed use limited to: Cornell University Library. Downloaded on March 06,2026 at 08:06:00 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+===== PAGE 3 =====
+1526 IEEE INTERNET OF THINGS JOURNAL, VOL. 13, NO. 1, 1 JANUARY 2026
+Fig. 1. Framework of the cooperative driving model at the mixed tra ﬃc, unsignalized intersection.
+design of individual reward function and the cooperative
+decision-making model of CA Vs based on the cooperative
+game. Section IV introduces an interaction decision-making
+model between CA Vs and HDVs based on the Stackel-
+berg game. In Section V, the cooperative driving framework
+is validated through numerical, hardware-in-the-loop, and
+human-in-the-loop experiments. Section VI concludes this
+work and provides future directions.
+II. P ROBLEM STATEMENT AND COOPERATIVE
+DRIVING FRAMEWORK
+At unsignalized intersections, when multiple vehicles simul-
+taneously approach the conﬂict zone, there are complex
+conﬂicts between each other that share space–time resources.
+Moreover, for the human–machine mixed tra ﬃc in the fore-
+seeable future during the development process of autonomous
+driving, conﬂicting vehicles may contain both CA Vs and
+HDVs. Meanwhile, it is a di ﬃcult task for CA Vs to achieve
+conﬂict resolution safely and complete tra ﬃc tasks e ﬃciently
+with the unknown intentions of human drivers. E ﬀectively
+resolving conﬂicts and managing tra ﬃc ﬂow at unsignalized
+intersections with mixed tra ﬃc is a crucial issue.
+The left part of Fig. 1 presents a thumbnail of the research
+scenario. In addition, our research is based on the following
+assumptions.
+1) Since the primary focus is on the complex interactions
+and cooperation within unsignalized intersections, lane-
+changing maneuvers of both HDVs and CA Vs upstream
+of the intersection are not considered.
+2) Once a vehicle enters the cooperation area, its state (i.e.,
+position, speed, and acceleration) can be fully observed
+by other vehicles through onboard perception systems
+and vehicle-to-vehicle state-sharing mechanisms.
+To address the complex conﬂicts and achieve safe and
+eﬃcient cooperation in mixed tra ﬃc environments, a multi-
+vehicle cooperative decision-making method coupled with the
+interaction between CA Vs and HDVs and the cooperation of
+CA Vs based on game theory is designed. The cooperative
+driving framework is present in Fig. 1. The entire model
+is expressed as a bi-level optimization problem, structured
+such that the objective is to maximize the overall reward of
+cooperative CA Vs, with constraints on maximizing the reward
+of each HDV .
+Speciﬁcally, a cooperative decision-making model for all
+CA Vs based on cooperative game theory is proposed to
+determine their decision actions. For each vehicle, a reward
+function considering safety, eﬃciency, and comfort is designed
+to represent individual returns under diﬀerent actions. The total
+reward for a single vehicle is expressed as a weighted sum
+of these three components. The overall reward for the CA V
+group is the sum of individual rewards. The cooperative game
+model for CA Vs is formulated as a single-level constrained
+optimization problem aiming to maximize the total reward of
+all CA Vs. Safety constraints are designed to ensure the most
+basic safety guarantees among CA Vs. The cooperating CA Vs
+satisfy a set of principles, including individual rationality and
+group rationality.
+Moreover, an interaction model between CA Vs and HDVs
+is constructed based on the Stackelberg game. In this
+model, all CA Vs are treated as a uniﬁed whole, adopting
+a leader–multifollower structure. Due to the solving charac-
+teristics of the Stackelberg game, the model is formulated
+as a bi-level programming problem. It speciﬁcally consists
+of two key steps: action computation based on the optimal
+twin parameters and the update of twin parameters. Optimal
+parameters are used to build accurate CA Vs’ cognition of
+HDVs’ rewards, based on which the decision actions of CA Vs
+in mixed tra ﬃc scenarios are computed. For each set of CA V
+values, HDV actions can be estimated according to the opti-
+mal cognition parameters, thereby deriving the corresponding
+CA Vs reward and identifying the maximum possible reward.
+These parameters are referred to as twin parameters, which
+Authorized licensed use limited to: Cornell University Library. Downloaded on March 06,2026 at 08:06:00 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+===== PAGE 4 =====
+CUI et al.: GAME-THEORETIC FRAMEWORK OF INTERACTION AND COOPERATIVE DRIVING FOR CA Vs 1527
+reﬂect the HDV’s pReferences for safety and e ﬃciency. At
+each decision-making step of the CA Vs in the mixed tra ﬃc
+environment, multiple twin parameter values are generated for
+each HDV . For each of these values, the corresponding HDV
+estimated action is obtained through a twin game approach.
+The twin parameter whose estimated HDV action is closest to
+the actually observed HDV behavior is selected as the optimal
+parameter, and its closeness is used to calculate a ﬁtness score.
+Based on the value of this ﬁtness, new twin parameter samples
+are generated within a deﬁned range to support further twin
+game computations.
+Finally, to demonstrate the feasibility and e ﬀectiveness
+of the cooperative driving framework, cases are designed
+for experimental veriﬁcation from multiple perspectives. The
+comparison of the simulation results with di ﬀerent methods is
+conducted, which includes rule-, reservation-, and RL-based
+methods. Also, the potential of the method for scalability with
+respect to the number of vehicles is veriﬁed. Additionally, val-
+idation experiments are performed to verify the feasibility of
+method application, including the CA V cooperative algorithm
+veriﬁcation of domain controller in the loop and collaborative
+algorithm veriﬁcation in mixed tra ﬃc of human driving in the
+loop.
+III. C OOPERATIVE DRIVING MODEL FOR CAVS
+BASED ON COOPERATIVE GAME
+For CA V systems, the e ﬀectiveness of motion planning
+depends on its capability to achieve e ﬃcient cooperative
+driving and optimal resource utilization within complex traf-
+ﬁc environments. Cooperative game theory is well-suited to
+model this challenge, as it treats each vehicle as an agent
+whose decisions are interdependent with those of other vehi-
+cles, rather than operating in isolation. Cooperative game
+theory eﬀectively captures the interdependencies and interac-
+tions among vehicles, enabling the system to optimize overall
+performance.
+A. Design the Reward Function
+First, the reward function of game theory in this article
+is deﬁned. The same design is applied to both cooperative
+game and Stackelberg game, while CA V and HDV also share
+the same reward function components. The reward function
+is designed considering the requirements of safety, e ﬃciency,
+and comfort in the process of driving, and the same function
+composition is used for di ﬀerent types of vehicles. The single
+vehicle’s total proﬁt is the weighted sum of three indicators
+fi =
+3X
+ind=1
+wiind fiind = w1i f1i + w2i f2i + w3i f3i (1)
+where i can be a vehicle that is either CA V or HDV , f1i is
+the safety indicator, f2i is the e ﬃciency indicator, f3i is the
+comfort indicator, w1i–w3i are weight of the three indicators,
+and fi is the total proﬁt of vehicle i.
+The distance di ﬀerence to collision (DDTC) is used as a
+safety metric, which is calculated by the di ﬀerence in travel
+distances to the conﬂict point between two interactive vehi-
+cles. Since the calculation results of distance di ﬀerence may
+signiﬁcantly exceed the required threshold, it is considered to
+be safe enough when DDTC i j> DDTCthre. The mathematical
+expression is shown in the following equation:
+f1i =− min
+j
+(
+min
+˚
+DDTCi j− DDTCthre, 0
+	
+DDTCthre
+)
+DDTCi j =
+ˇˇ∆Li j− ∆L ji
+ˇˇ
+∆Li j = li j− xk+1
+i (2)
+where j is the conﬂicting vehicle of i in list of game players,
+DDTCi j is the DDTC of vehicle i and j, ∆Li j is the distance
+from the conﬂict point of vehicle j on the trajectory of vehicle
+i, DDTCthre serves as the safe threshold indicating that the dis-
+tance diﬀerence to the conﬂict point between the two vehicles
+is suﬃciently large, li j is the position of the conﬂict point of
+vehicle i and j on the travel path of vehicle i, and xk+1
+i is the
+position of vehicle i at the next timestamp calculated according
+to the kinematic equations. If DDTC i j> DDTCthre, this index
+is calculated as 0 for the corresponding vehicles i and j. The
+outer min operation is applied to all j∈ S CA V∪ S HDV\{ j},
+that is, all other vehicles within the deﬁned game-theoretic
+range that are in conﬂict with vehicle i. The minimum value
+from the computed results was selected, which corresponds
+to the most safety-critical vehicle from i’s perspective. The
+minimum value of the DDTC i j calculation result of vehicle i
+is selected as the security representation of vehicle i, that is,
+the most serious conﬂict. Normalization is performed in the
+formula by dividing by DDTC thre.
+Speed is used as a measure of e ﬃciency as shown in the
+following equation, which is updated according to kinematics
+equations:
+f2i = vk+1
+i
+Vmax
+i
+(3)
+where vk+1
+i is the speed of vehicle i at the k + 1 timestamps
+and Vmax
+i is the maximum speed of vehicle i. Similarly,
+normalization is performed in the formula by dividing byVmax
+i .
+The squared di ﬀerence in acceleration before and after the
+update is employed to represent comfort as shown in the
+following equation:
+f3i =
+ 
+ak+1
+i − ak+1
+i
+2
+ 
+Amax
+i − Amin
+i
+2 (4)
+where ak+1
+i is the acceleration of vehicle i and ak
+i is the accel-
+eration of vehicle i at the current timestamp. Normalization is
+performed by dividing by the maximum acceleration change
+amplitude for a single step, which is the di ﬀerence between
+the maximum acceleration of vehicle i Amax
+i and the minimum
+acceleration of vehicle i A min
+i .
+Particularly, given the need to adjust the parameter weights
+of the HDV in real time during the interaction process,
+reducing the number of parameters is essential to avoid
+exponentially increasing computational load. For the reward
+function of HDV , the processing procedure in the following
+Authorized licensed use limited to: Cornell University Library. Downloaded on March 06,2026 at 08:06:00 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+===== PAGE 5 =====
+1528 IEEE INTERNET OF THINGS JOURNAL, VOL. 13, NO. 1, 1 JANUARY 2026
+equation is performed on the weight values of safety and
+eﬃciency indicators:
+(
+w1i = P cos2 (θi)
+w2i = Q sin2 (θi) , θ i∈
+h
+0,π
+2
+i
+(5)
+where P and Q are ﬁxed constants and universally applicable
+constants for all HDVs. θi is the simpliﬁed parameter with a
+trigonometric relationship to w1i and w2i, which varies across
+diﬀerent HDVs and evolves dynamically during interactions
+(for details, refer to Algorithm 2). In this way, the safety
+and eﬃciency reward of HDV are characterized and updated
+through only one parameter θ in our model.
+B. Establish the Cooperative Model of CAVs
+Cooperative games are a class of games in which play-
+ers can coordinate, communicate, and collaborate to achieve
+shared objectives and optimize collective outcomes. These
+games concentrate on devising strategies for rational resource
+allocation, making optimal decisions, and establishing robust
+cooperation mechanisms among participants. The primary aim
+is to maximize overall utility and achieve superior outcomes.
+Through such structured collaboration, cooperative games
+explore the dynamics of group decision-making, emphasizing
+the synergies that can be created when individuals work
+together toward common goals. Di ﬀering from the non-
+cooperative game that regards other participants as rivals
+and emphasizes maximizing individual proﬁt, the cooperative
+game can maximize the overall beneﬁts of the participants,
+thereby achieving Pareto optimality. However, the cooperative
+game must meet the requirements of superadditivity, individual
+rationality, and group rationality.
+Lemma 1 ([42]): A cooperative game has superadditivity
+and satisﬁes the principle of individual rationality and group
+rationality.
+Superadditivity characterizes the condition where the col-
+lective reward of a coalition exceeds the sum of rewards
+obtained by its individual members operating independently.
+This principle is mathematically expressed as
+R (Vi) + R
+ 
+V j
+
+≤ R
+ 
+Vi∪ V j
+
+(6)
+where R(Vi) denotes the reward function for vehicle i and Vi∪
+V j represents a coalition consisting of vehicles i and j.
+Furthermore, the principle of individual rationality is
+expressed by the inequality
+R (Vi)≤ Ri
+ 
+Vi∪ V j,..., ∪Vn
+
+(7)
+where Ri(Vi∪ V j,..., ∪Vn) indicates the reward for vehicle i
+when participating in a coalition with up to n vehicles. This
+condition ensures that each vehicle achieves a greater reward
+in a cooperative setting than it could achieve independently.
+Finally, group rationality is deﬁned by the summation of
+individual rewards, aiming to achieve the collective goals of
+the system
+O =
+X
+i∈N
+R (Vi) (8)
+where O represents the overall objective of the cooperative
+game, which is simultaneously the aggregate of individual
+rewards.
+Based on the fundamental concepts of cooperative game
+theory, this article constructs a model for cooperation among
+CA Vs. The proposed cooperative model of CA Vs is capable
+of calculating individual actions of CA Vs as a tier of the
+bi-level optimization problem constructed in mixed tra ﬃc
+ﬂows. Additionally, it can also be used to solve for the decision
+actions of CA Vs in scenarios consisting purely of CA Vs. The
+speciﬁc formulation of the model is presented in the following
+equation:
+max
+AS CA V∈DS CA V
+FS CA V
+ 
+AS CA V
+
+=
+X
+i∈S CA V
+fi
+s.t. amin
+i ≤ ai≤ amax
+i
+v2
+i1− 2ai1∆Li1i2≤ 0 or v2
+i2− 2ai2∆Li2i1≤ 0
+i1, i2∈ S CA V (9)
+where S CA V is a set of all CA Vs, AS CA V denotes the action
+sequence of S CA V, D represents the policy space of the
+subscripted object, and FS CA V denotes the overall reward func-
+tion value of S CA V deﬁned as the sum of individual CA V
+rewards. amin
+i and amax
+i , respectively, denote the minimum and
+maximum acceleration limits for CA V i, thereby deﬁning the
+boundaries of the decision variables. Finally, safety constraints
+are deﬁned, ensuring that at least one of any two CA Vs can
+brake before reaching the conﬂict point.
+IV. I NTERACTION DECISION -M AKING MODEL BETWEEN
+CAVS AND HDV S BASED ON STACKELBERG GAME
+Current research on the cooperation issues of CA Vs often
+assumes fully CA V environments, but this assumption is overly
+idealistic and fails to reﬂect the reality that CA Vs and HDVs
+will coexist on the roads for an extended period. Studies
+that consider mixed tra ﬃc scenarios frequently treat HDVs as
+dynamic obstacles or characterize them with simplistic models,
+neglecting the interactive characteristics and heterogeneity of
+HDVs. To address this gap, a framework for cooperative
+driving of CA Vs in mixed tra ﬃc scenarios is proposed.
+This framework formulates a leader–multifollower Stackelberg
+game between CA Vs as a whole and HDVs and introduces
+a twin game parameter update mechanism to accommodate
+the uncertainties of HDVs in dynamic interactions, ultimately
+determining the optimal decision actions for CA Vs.
+The vehicles within a certain range of the intersection are
+considered to have entered the scope of planning considera-
+tion, namely, they will participate in the game. S CA Vand S HDV
+represent the set of CA Vs and HDVs that are involved in the
+game, respectively.
+A. Stackelberg Game Bi-Level Optimization Problem
+Noncooperative game theory is a signiﬁcant branch of game
+theory in which players pursue their individual goals by
+adopting noncooperative strategies. In noncooperative games,
+each player has full control over their own beneﬁts and
+actions, but there is incomplete or asymmetric information
+Authorized licensed use limited to: Cornell University Library. Downloaded on March 06,2026 at 08:06:00 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+===== PAGE 6 =====
+CUI et al.: GAME-THEORETIC FRAMEWORK OF INTERACTION AND COOPERATIVE DRIVING FOR CA Vs 1529
+regarding other players’ strategies and information. Within this
+context of uncertainty, participants must analyze the actions of
+others and consider potential countermeasures to reﬁne their
+own strategies. Ultimately, each participant aims to make the
+optimal decision to maximize their own beneﬁts.
+The Stackelberg game is a production leadership model
+ﬁrst proposed by the German economist H. von Stackelberg
+in the 1930s, falling under the category of noncooperative
+games. Participants are divided into two roles: leaders and
+followers. After the leader makes a decision, the followers
+react accordingly. The leader’s ﬁnal decision is based on their
+expectations of the followers’ response.
+Practical observations reveal that current A Vs often demon-
+strate excessive conservatism in interactive scenarios, far
+exceeding actual safety requirements and causing unneces-
+sary e ﬃciency degradation. Moreover, such overly passive
+A V behaviors may lead human drivers to question and even
+challenge A Vs’ capabilities.
+The one-leader–one-follower Stackelberg game has been
+widely applied in CA V–HDV decision-making problems. In
+these studies, it is generally accepted to designate the CA V
+as the leader and HDVs /other vehicles as followers [38], [43].
+Unlike passive interaction decision-making, our designed A V
+algorithm aims to achieve proactive interaction capabilities.
+Based on the deﬁnition of Stackelberg game and its equilib-
+rium, the leader–follower assumption enables the leader-CA V
+to fully consider HDVs’ potential behavioral responses to
+A V actions, thereby reaching Stackelberg equilibrium. This
+approach fundamentally empowers CA Vs with active interac-
+tion abilities.
+Lemma 2: Existence of Stackelberg Equilibrium.
+A Stackelberg equilibrium is a solution concept in sequential
+games where the leader commits to a strategy, and the follower
+observes this strategy and the follower optimally responds.
+The equilibrium consists of a pair of strategies where the
+leader maximizes their payo ﬀ, considering the follower’s best
+response to the leader’s chosen strategy.
+In a ﬁnite Stackelberg game, there exists at least one
+Stackelberg equilibrium. Consider a Stackelberg game with a
+leader L and a follower F. Let S L and S F denote the strategy
+sets of the leader and the follower, respectively. Let uL(sL, sF)
+and uF(sL, sF) be the reward functions for the leader and the
+follower, respectively, where sL∈ S L and sF∈ S F.
+The pair of strategies ( s∗
+L, s∗
+F(s∗
+L)) forms a Stackelberg equi-
+librium if
+s∗
+L = arg max
+sL∈S L
+uL
+ 
+sL, s∗
+F (sL)
+
+s∗
+F (sL) = arg max
+sF∈S F
+uF (sL, sF) ∀sL∈ S L. (10)
+Consequently, a Stackelberg equilibrium exists when the
+leader’s strategy maximizes its payo ﬀ, taking into account
+the follower’s optimal response to the leader’s strategy, and
+the follower’s strategy maximizes its payo ﬀ given the leader’s
+chosen strategy.
+Based on the basic principle of Stackelberg game and
+backward induction method, the bi-level model and speciﬁc
+optimization problems are established in (11). The optimiza-
+tion objective is to maximize the overall beneﬁt of CA Vs.
+The decision variables are the accelerations of CA Vs, sub-
+ject to acceleration limits and safety constraints for collision
+avoidance. The optimal actions of HDVs are formulated as a
+single-level optimization problem within the constraints
+max
+AS CA V∈DS CA V
+FS CA V
+ 
+AS CA V
+
+s.t. θ j =θ j
+∗
+k
+a∗
+j = arg max
+a j∈D j
+f j
+ 
+AS CA V
+
+amin
+i ≤ ai≤ amax
+i
+amin
+j ≤ a j≤ amax
+j
+v2
+j− 2a j∆L ji≤ 0 or v2
+i− 2ai∆Li j≤ 0
+i∈ S CA V, j∈ S HDV (11)
+where AS CA V denotes the action sequence of S CA V, D represents
+the policy space of the subscripted object, and FS CA V denotes
+the overall reward function value of S CA V. θ j represents the
+proﬁt-related parameters of the HDV j as deﬁned in (5), taking
+its optimal value at time k, denoted as θ j∗
+k. When CA Vs adopt
+AS CA V, the optimal action a∗
+j of HDV j is determined by the
+principle of optimal response. amin
+i and amax
+i , and amin
+j and amax
+j ,
+respectively, denote the minimum and maximum acceleration
+limits for CA Vi and HDV j, thereby deﬁning the boundaries of
+the decision variables. Finally, safety constraints are deﬁned,
+ensuring that at least one of any two vehicles can brake before
+reaching the conﬂict point.
+The implementation process of the proposed method is
+illustrated in the form of pseudocode, as shown in Algorithm 1.
+When continuous vehicle inﬂow exists at the intersection, we
+adopt a dynamic grouping mechanism to enable cooperative
+passage for a larger number of vehicles, thereby supporting
+scalability veriﬁcation in high-density mixed tra ﬃc scenarios.
+The core idea is to hierarchically decompose continuous traﬃc
+ﬂow into multiple distributed cooperative subproblems. When
+vehicles enter the predeﬁned game-trigger region (e.g., from
+50 m before the stop line to the exit of the conﬂict zone), they
+are dynamically grouped according to the following rules. In
+each round, the vehicle closest to the intersection center c0 is
+selected as the subgroup anchor. Then, for each of the other
+entry lanes, the vehicle closest to c0 is matched to form a coop-
+erative subgroup consisting of 1–4 vehicles. Grouped vehicles
+are excluded from subsequent rounds, and the above process is
+repeated until all vehicles are assigned to a subgroup. For each
+cooperative subgroup, the optimal actions of the CA Vs are
+solved using the constrained bi-level optimization framework
+described in (11), and the corresponding estimated actions of
+HDVs are also obtained.
+B. Parameter Updating Mechanism Based on Twin Game
+In real intersection scenarios, HDVs interacting with other
+vehicles exhibit variations in safety and e ﬃciency consid-
+erations by human drivers over time and across di ﬀerent
+interaction states. A ﬁxed-parameter model struggles to cap-
+ture the uncertainties inherent in interactions HDVs, making
+it diﬃcult for CA Vs to accurately infer HDV strategies, which
+hinders the improvement of interaction safety and e ﬃciency.
+Authorized licensed use limited to: Cornell University Library. Downloaded on March 06,2026 at 08:06:00 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+===== PAGE 7 =====
+1530 IEEE INTERNET OF THINGS JOURNAL, VOL. 13, NO. 1, 1 JANUARY 2026
+Algorithm 1 Bi-Level Model-Based Game Theory
+To address this, a mechanism based on twin games for real-
+time updating of HDV’s parametersθ is designed, dynamically
+adjusting to accommodate the variations and uncertainties in
+HDV’s behavior. This section will provide a detailed intro-
+duction to the parameter space of the twin games, the method
+for determining the optimal parameters, and the approach for
+updating the parameter space.
+At time t = k, the parameter space requiring twin calcu-
+lations is deﬁned as a list of parameter values shown in the
+following equation:
+Θk
+j =
+˚
+θk
+j1,θ k
+j2,...,θ k
+jm,...,θ k
+jn( j,k)
+	
+, j∈ S HDV (12)
+Algorithm 2 Twin Game Parameter Update Algorithm
+where Θk
+j is the list of twin parameters of HDV j at t = k.
+θk
+j1,θ k
+j2,...,θ k
+jm,...,θ k
+jn(k) is the total parameter values of the
+twin game calculation of j, in which θk
+jm represents the mth
+strategy available to vehicle j at time step k and n( j, k) is
+the total number of twin parameters for vehicle j at time step
+t = k.
+To systematically explore all possible combinations of
+parameters among the HDVs, the Cartesian product of the
+strategy sets for each j∈ S HDV is computed. The Cartesian
+product Θk is deﬁned in the following equation:
+Θk = Θk
+j1× Θk
+j2×··· × Θk
+j|S HDV| (13)
+where× denotes the Cartesian product operator. This results
+in a comprehensive set of all possible strategy combinations,
+where each θk
+m in (14) is an element of the corresponding
+strategy set Θk
+ji. By leveraging the Cartesian product, all
+potential interactions and strategic conﬁgurations among the
+HDVs are accounted for in the analysis, thereby ensuring a
+thorough exploration of the decision-making landscape
+θk
+m =
+
+θk
+j1m j1
+,θ k
+j2m j2
+,...,θ k
+j|S HDV|m j|S HDV|
+
+(14)
+Authorized licensed use limited to: Cornell University Library. Downloaded on March 06,2026 at 08:06:00 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+===== PAGE 8 =====
+CUI et al.: GAME-THEORETIC FRAMEWORK OF INTERACTION AND COOPERATIVE DRIVING FOR CA Vs 1531
+where θk
+jm j represents the value of the parameter related to
+HDV j within θk
+m, corresponding to the m jth element of the
+set of all possible values Θk
+j.
+For each parameter combination θk
+m in Θk, it is substituted
+into the model (11) and replace the ﬁrst constraint with θ j =
+θk
+m, resulting in the creation of twin models whose number is
+|Θk| =|Θk
+j1|×|Θk
+j2|×··· ×|Θk
+j|S HDV||.
+For the mth parameter combination model, the computed
+actions for all HDVs are represented by the vector a∗km shown
+in (15), where a∗k
+jm j denotes the computed action for vehicle
+j under this particular parameter combination. Here, star *
+represents the calculated optimal actions of HDVs according
+to (11) under the parameter θk
+m, and a∗k
+jm j is actually a∗
+j in
+(11).Ak
+m represents the set of computed results for all HDVs
+at time k from the parameter combinations in Θk
+a∗k
+m =
+
+a∗k
+j1m j1
+, a∗k
+j2m j2
+,..., a∗k
+j|S HDV|m j|S HDV|
+
+Ak =
+˚
+a∗k
+m
+ˇˇ m∈
+ˇˇΘkˇˇ	
+. (15)
+After obtaining a series of results Ak
+j from the model, the
+similarity between the computed actions of all HDVs and
+the real actions can be measured. The similarity between the
+computed actions of HDVs and the real actions is deﬁned
+using the Manhattan norm. Select the parameter combination
+corresponding to the highest similarity as the optimal param-
+eter value for the next time step, so as to achieve optimal
+parameter value updates in the following equation:
+m∗ = arg min
+m∈|Θk|
+a∗k
+m− ak
+real
+
+1. (16)
+The best parameter combination is updated to θk
+m∗. The
+updated optimal parameter θk
+m∗ is applied to the proposed
+model in (11) at the next timestamps based on which the
+CA V’s optimal execution action is calculated.
+For each j∈ S HDV, the similarity between the corresponding
+action component in the computed result a∗km∗ under the
+condition m∗ and its actual action need to be calculated
+separately, aiming to determine the number of twin parameter
+values required for j at the next time step. This is deﬁned as
+the ﬁtness, which indicates the degree to which each parameter
+combination in the previous time step’s twin parameter list
+matches the current action of j. The speciﬁc deﬁnition of
+ﬁtness is as follows:
+α j = 1−
+ˇˇˇˇˇ
+a∗k
+jm∗− ak
+jreal
+ak
+jreal
+ˇˇˇˇˇ (17)
+where a jreal is the real action of HDV j at time step t = k
+and a∗k
+jm∗ is the model computation action corresponding
+to m∗ of j. Evidently, the value range of α j is [0, 1], and
+as α j increases, a∗k
+jm∗ becomes closer to a jreal, indicating that
+the current optimal parameter combination of the model m∗ is
+more adaptable to the interaction state of the current HDV j.
+Then, the number of twin parameter values for the next
+time step is determined based on α, by establishing a mapping
+relationship between n( j, k + 1) and α j. The g function can be
+used to represent the mapping relationship in the following
+equation:
+n ( j, k + 1) = g
+ 
+α j
+
+=
+8
+ˆˆˆˆ<
+ˆˆˆˆ:
+n1, if α j∈ [0, a1)
+n2, if α j∈ [a1, a2)
+... ...
+nm, if α j∈ [am−1, 1]
+(18)
+where g(α j) represents the mapping relationship from α j to
+n( j, k + 1) and α j∈ [0, 1]. The intervals [ a1, a2), [a2, a3), ... ,
+[am−1, 1] cover the entire range of [0 , 1]. The values within
+each interval n1, n2,..., nm correspond to di ﬀerent values of
+n( j, k + 1). When α j is small, it indicates that the current
+optimal parameters poorly adapt to HDV j. According to
+(17), this means that the computed HDV actions under all
+current twin parameters signiﬁcantly deviate from the actual
+observations. Consequently, more twin parameter values need
+to be explored in the next timestep to better capture HDV’s
+potential action space, thus requiring a larger value of n.
+Therefore, the number of twin parameter values needs to
+satisfy the following relationship: n1 > n2 > n3 >··· > nm.
+To ensure the feasibility of (19), it is further required that
+n1, n2,..., nm are odd numbers.
+As shown in (18), the mechanism of determining the number
+of twin parameters based on ﬁtness e ﬀectively controls the
+exponential growth of parameters at the individual level. As
+the interaction process progresses, the CA V’s estimation of
+HDV actions becomes increasingly accurate, leading to a
+corresponding reduction in the number of twin parameters
+required.
+After determining the number of twin parameters, it is also
+necessary to determine the speciﬁc values of these parameters.
+The upper and lower limits of the twin parameter values of
+vehicle j are ﬁrst established, followed by the speciﬁc value
+of each twin parameter by interpolating within the interval. To
+maintain the basic computational e ﬀectiveness of the model,
+it should be ensured that θk
+jm∗ is still included in the twin
+parameter list Θk+1
+j at t = k + 1. Parameters are generated
+on both sides of θk
+jm∗ as the center, as shown in the following
+equation:
+θk+1
+j min = max
+
+θk
+jm∗− n ( j, k + 1)
+n1
+× π
+2, 0
+
+θk+1
+j max = max
+
+θk
+jm∗ + n ( j, k + 1)
+n1
+× π
+2, 0
+
+Θk+1
+j
+=
+8
+<
+:θk+1
+j min + i·
+2
+
+θk
+jm∗−θk+1
+j min
+
+n− 1
+ˇˇˇˇ i = 0, 1,..., n− 1
+2
+9
+=
+;
+∪
+˚
+θk
+jm∗
+	
+∪
+8
+<
+:θk
+jm∗ + i·
+2
+
+θk+1
+j max−θk
+jm∗
+
+n− 1
+ˇˇˇˇ i = 0, 1,..., n− 1
+2
+9
+=
+; (19)
+where n1 is the maximum number deﬁned in (18). Through
+the above calculations, the next-time twin parameters Θk+1
+j
+for each vehicle in S HDV can be determined, thereby updating
+(12). This completes one iteration.
+Authorized licensed use limited to: Cornell University Library. Downloaded on March 06,2026 at 08:06:00 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+===== PAGE 9 =====
+1532 IEEE INTERNET OF THINGS JOURNAL, VOL. 13, NO. 1, 1 JANUARY 2026
+V. C ASE STUDY AND EXPERIMENTAL VERIFICATION
+To validate the e ﬀectiveness and feasibility of the pro-
+posed framework, veriﬁcation is conducted from two aspects.
+On the one hand, the simulation results of various meth-
+ods in highway-env are compared, including reservation-,
+RL-, and proposed game theory-based methods. On the other
+hand, several validation experiments are conducted using
+a hardware-in-the-loop and human-in-the-loop experimental
+platform based on CARLA to verify the practical applicability
+of the proposed method.
+A. Numerical Simulations
+This section conducts numerical simulation and perfor-
+mance analysis of the proposed method from three perspec-
+tives. First, we compare the proposed method (with and
+without the twin parameter updating mechanism, G-Nontwins
+and G-Intwins) against several baseline methods in terms of
+safety and e ﬃciency metrics. The baseline methods include
+the rule-based ﬁrst-in-ﬁrst-out (FIFO) method, the reservation-
+based PIDM method, a single-agent RL method ( singlePPO),
+and a multiagent RL method ( IPPO). Second, a typical mix
+traﬃc scenario involving four vehicles is selected to intuitively
+demonstrate the execution process of the proposed method
+and its decision-making rationality under complex interac-
+tions. Finally, to verify the adaptability and scalability of
+the proposed method under di ﬀerent tra ﬃc sizes, tests are
+conducted in mixed tra ﬃc scenarios involving 2–12 vehicles.
+The simulation results are then systematically analyzed.
+The simulation environment is built upon a single unsignal-
+ized four-way intersection. This environment is developed
+based on the open-source platform highway-env [44],
+which provides a concise and e ﬃcient testing framework
+for autonomous driving decision-making tasks. HDVs in the
+background tra ﬃc are controlled by the intelligent driver
+model (IDM), forming a stable ﬂow of background tra ﬃc.
+In highway-env, a simple collision avoidance logic is
+designed for HDVs; if a potential collision is predicted within
+a certain horizon while maintaining the current speed, the
+HDV will proactively decelerate to avoid conﬂict. In all
+simulation environments, the maximum acceleration of CA Vs
+is set to 3 m /s2, the minimum acceleration is set to −3 m/s2,
+and the maximum speed limit is set to 10 m/s, ensuring realism
+and controllability of the simulated scenarios.
+For the convenience of subsequent analysis, the basic con-
+cepts of the evaluation metrics adopted in this study are
+introduced in advance.
+1) Post-Encroachment Time:This metric measures the time
+diﬀerence between two vehicles successively passing
+through a conﬂict point. It is an ex post indicator that can
+be observed and recorded during each experimental trial.
+In one experiment case, a post-encroachment time (PET)
+value can be formed between each pair of vehicles.
+2) Time Di ﬀerence to Collision: For safety evaluation
+throughout the entire interaction process, the time diﬀer-
+ence to collision (TDTC) is introduced as a key metric.
+TDTC represents the time di ﬀerence required for the
+involved vehicles to reach the conﬂict point from their
+current states. It serves as a proxy for assessing the
+safety level during the interaction process.
+3) In addition, the average speed of vehicles during the
+passage process is used as an e ﬃciency metric.
+1) Comparative Evaluation of Di ﬀerent Methods: Since the
+designed cooperative triggering mechanism divides at most
+four vehicles into one cooperative group each time, the four-
+vehicle cooperative scenario becomes the core and typical
+application case of the proposed method. Based on this,
+four vehicles are selected as the experimental subjects for
+comparative analysis among di ﬀerent methods. The scenario
+is set as a mixed tra ﬃc ﬂow containing 2 CA Vs and 2 HDVs
+to verify the decision rationality and cooperative capability
+of the proposed method under heterogeneous and complex
+conditions.
+To comprehensively evaluate the performance of the pro-
+posed method, three types of baseline methods are designed:
+rule-based methods, reservation-based methods, and RL-based
+methods. Comparative experiments are conducted under the
+same simulation environment. In addition, to verify the
+eﬀectiveness of the proposed twin mechanism, two of our pro-
+posed methods are designed for comparison: one dynamically
+updates the HDV reward function weight parameters through
+twin games (denoted as G-Intwins) and the other keeps the
+HDV weight parameters ﬁxed at their initial values (denoted
+as G-Nontwins).
+The classical FIFO method is adopted as one of the baseline
+schemes. This method restricts only one vehicle to enter the
+intersection control area at a time (deﬁned as the region from
+10 m before the stop line to the whole conﬂict zone). Under
+this mechanism, vehicles pass through the intersection in
+their arrival order, thereby achieving a basic conﬂict-avoidance
+strategy.
+The reservation-based strategy using virtual platoon projec-
+tion [15], referred to as PIDM, maps the positions of vehicles
+from a 2-D space to a 1-D queue. By computing the relative
+distance to the conﬂict point, a virtual platoon structure is
+formed. Longitudinal control actions are then generated based
+on a car-following model (e.g., IDM) to achieve indirect
+cooperative passage.
+In the selection of RL methods, the proximal policy opti-
+mization (PPO) algorithm is chosen due to its advantages such
+as high computational e ﬃciency, capability to handle both
+continuous and discrete action spaces, relative implementation
+simplicity, and broad applicability. Therefore, the standard
+PPO algorithm provided by the Stable-Baselines3 library is
+adopted as a comparative method and is trained through
+interaction within the simulation environment provided by
+highway-env. On this basis, two RL-based comparative
+methods are designed: a single-agent RL method (denoted as
+singlePPO) and a multiagent RL method (denoted as IPPO).
+The IPPO method enables e ﬃcient learning and policy con-
+vergence in a multiagent environment based on independent
+training for each agent. It demonstrates good scalability and
+generalization capabilities, making it suitable for modeling and
+solving cooperative decision-making problems.
+In the simulation experiments, the test scenario includes
+four entrance lanes, each assigned one vehicle waiting to pass
+Authorized licensed use limited to: Cornell University Library. Downloaded on March 06,2026 at 08:06:00 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+===== PAGE 10 =====
+CUI et al.: GAME-THEORETIC FRAMEWORK OF INTERACTION AND COOPERATIVE DRIVING FOR CA Vs 1533
+TABLE I
+AGGREGATED INDICATORS RESULTS OF COMPARISON METHODS
+Fig. 2. Boxplot for speed comparison.
+through the intersection. The initial positions of the vehicles
+are randomly generated within a range of 50–60 m from the
+intersection, and their initial speeds are randomly sampled
+within the range of 30–36 km/h. The speciﬁc driving directions
+of the vehicles are also randomly assigned to simulate diverse
+traﬃc conﬂict situations. To enhance the robustness of the
+experimental results and improve the reliability of statistical
+analysis, a total of 20 di ﬀerent random seeds are set to cover
+various initial vehicle conﬁgurations and traﬃc ﬂow scenarios.
+First, the success rate of vehicle passage for each method
+is recorded across di ﬀerent cases. The average speed and
+minimum PET during the passage process for each vehicle are
+also collected. For all cases, the average values of these metrics
+are computed separately for all vehicles, CA Vs, and HDVs and
+summarized in Table I. In addition to average statistics, we
+further analyze the distribution of average speed and minimum
+PET for all vehicles and for CA Vs using Figs. 2 and 3, in order
+to illustrate the di ﬀerences in distribution across methods.
+First, cases in which no collision occurred and no dead-
+lock was observed during the intersection passage process
+are marked as successful. Except for the RL-based methods
+singlePPO and IPPO, methods with explicit safety guarantees
+such as FIFO, PIDM, as well as the proposed method, all
+achieved a 100% success rate. Due to the inherent limitations
+of RL and its constrained generalization capability, singlePPO
+and IPPO exhibited a certain proportion of failure cases under
+complex interaction scenarios, indicating insu ﬃcient safety
+assurance in such environments.
+In terms of passage eﬃciency, the average speed of vehicles
+during the intersection passage process is compared across
+Fig. 3. Boxplot for PET comparison.
+diﬀerent methods. The proposed G-Intwins method achieves
+the best overall performance in tra ﬃc eﬃciency, with an aver-
+age speed of 8.29 m /s. Although the average speed of CA Vs
+under G-Intwins and G-Nontwins is slightly lower than that
+under singlePPO, it should be noted that the relatively higher
+speed achieved by singlePPO comes at the cost of signiﬁcantly
+reduced safety. In contrast, G-Intwins and G-Nontwins main-
+tain high passage eﬃciency while ensuring safety. Meanwhile,
+we observe that FIFO and PIDM tend to produce relatively
+low CA V speeds and large speed discrepancies between CA Vs
+and HDVs. This suggests that these two methods may lack
+interaction awareness, causing CA Vs to passively adapt to
+HDV behaviors rather than make proactive decisions. By
+contrast, the proposed method objectively enables CA Vs and
+HDVs to achieve more consistent speed ranges, reﬂecting the
+intended cooperative and interactive capability of CA Vs. In
+addition, singlePPO and IPPO exhibit more extreme speed
+distributions. In some cases, the average speed of CA Vs drops
+to as low as 1.5 m /s, indicating signiﬁcant ﬂuctuations in
+decision quality and policy stability.
+In terms of safety, for all successful cases under each
+method, PET values between every pair of vehicles are
+computed. For each vehicle, the minimum PET during its
+passage process is selected for statistical analysis. First, under
+the FIFO method, the distribution range of minimum PET
+values across all vehicles is quite broad, with a maximum
+reaching nearly 10 s. In particular, CA Vs exhibit a generally
+high distribution of minimum PET values. While this ensures
+complete safety, it also results in an excessive loss of e ﬃ-
+ciency. In the successful cases of singlePPO and IPPO, PET
+values are distributed above 1 s, indicating that safe passage is
+theoretically achievable. However, the high collision rates of
+these methods remain nonnegligible, and the exhibited safety
+performance is not su ﬃciently convincing. Additionally, both
+RL-based methods show occurrences of abnormally large PET
+values (exceeding 10 s), further revealing their instability. In
+contrast, the PIDM method and the proposed G-Nontwins
+and G-Intwins methods keep PET values within a reasonable
+range—neither too large nor unsafe. In particular, the proposed
+method shows PET values concentrated around 2.5 s, provid-
+ing suﬃcient safety margins while improving space utilization
+eﬃciency. This demonstrates a well-achieved balance between
+safety and e ﬃciency.
+Authorized licensed use limited to: Cornell University Library. Downloaded on March 06,2026 at 08:06:00 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+===== PAGE 11 =====
+1534 IEEE INTERNET OF THINGS JOURNAL, VOL. 13, NO. 1, 1 JANUARY 2026
+Fig. 4. Statistical chart of dangerous conditions during interactions.
+(a) Critical moment. (b) Critical zone.
+However, since the comparative analysis with other methods
+is conducted based on all passage moments across all cases,
+the di ﬀerence between G-Nontwins and G-Intwins appears
+to be insigniﬁcant. In fact, this is because most moments
+during the passage process are not highly critical, and the
+interaction intensity is relatively low, so the twin parameter
+updating mechanism may not produce a visually noticeable
+eﬀect at the aggregate level. Nonetheless, a further analysis
+reveals that the twin-based game-theoretic parameter updating
+mechanism signiﬁcantly enhances cooperative performance
+in strongly interactive mixed tra ﬃc scenarios. As shown in
+Fig. 4, we extract and analyze data under critical conditions;
+in Fig. 4(a), we deﬁne a critical moment as any time during
+the interaction process when the TDTC between any two
+vehicles is less than 2 s. The speed and TDTC values at those
+moments are extracted for analysis. Similarly, in Fig. 4(b),
+we deﬁne a critical zone as the area from 10 before to
+20 m beyond the intersection stop line. The speed and TDTC
+information of vehicles located in this zone are also extracted.
+We ﬁnd that in Fig. 4(a), the G-Intwins method yields a
+speed distribution nearly identical to that of G-Nontwins
+but achieves signiﬁcantly higher TDTC values (Wilcoxon
+signiﬁcance test, p = 0.012). This suggests that the twin-
+based game-theoretic parameter update improves safety at
+temporally critical moments without compromising e ﬃciency.
+In Fig. 4(b), it is observed that the twin-based method results
+in generally higher speeds during vehicle passage through the
+conﬂict zone, while maintaining TDTC values above 1.5 s,
+which ensures safe interaction.
+2) Representative Case Study: A speciﬁc interaction seg-
+ment is selected to detail the implementation process of the
+G-Intwins method during the entire intersection passage from
+a results perspective, as illustrated in Fig. 5. For ease of
+analysis, the initial time point is chosen when one HDV ,
+vehicle #0, has already passed all conﬂict points and exited
+the intersection. Therefore, the focus is placed on analyzing
+the subsequent behaviors of HDV #1 and CA Vs #2 and #3.
+At T = 8 s, since vehicle #0 has already exited the conﬂict
+zone of the intersection, the participants in the game are
+limited to vehicles #1–#3. For vehicle #1, its behavior at
+this moment is mainly inﬂuenced by vehicle #2. Regardless
+Fig. 5. Comparison indicators of varying numbers of vehicles. (a) Temporal
+segmentation of vehicle states. (b) #1 acceleration and theta time-varying plot.
+Fig. 6. Comparison indicators of varying numbers of vehicles.
+of whether #2 accelerates or decelerates, #1 is closer to the
+conﬂict point formed by #1 and #2, and its speed of 3.98 m /s
+is signiﬁcantly higher than #2’s speed of 0.03 m /s. Therefore,
+the model predicts that #1 will accelerate to simultaneously
+increase the safety margin and improve e ﬃciency. Based on
+this, with accurate prediction of the HDV behavior by the
+CA Vs, vehicle #2 chooses a small acceleration to maintain
+the speed diﬀerence with #1 and thereby increase the distance
+from the conﬂict point. The distance di ﬀerence from #1 and
+#3 to their conﬂict point is relatively large, satisfying the
+Authorized licensed use limited to: Cornell University Library. Downloaded on March 06,2026 at 08:06:00 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+===== PAGE 12 =====
+CUI et al.: GAME-THEORETIC FRAMEWORK OF INTERACTION AND COOPERATIVE DRIVING FOR CA Vs 1535
+Fig. 7. Experimental platform setup and scenario design. (a) Device conﬁguration and environment construction of CARLA. (b) Conﬁguration and
+implementation of CA V and HDV in CARLA, while Scenario-(1) of two CA Vs and Scenario-(2) in mixed tra ﬃc are designed.
+safety margin requirement. Furthermore, vehicles #2 and #3
+are far apart with no strong conﬂict, and considering safety
+to some extent, the cooperation between #2 and #3 tends to
+result in #3 accelerating with an acceleration of 1.95 m /s2.
+At T = 9 s, the situation of vehicle #1 remains unchanged.
+However, as the distance between #1 and #2 further increases,
+#2 accelerates with a higher acceleration. At this moment, the
+conﬂict between #2 and #3 gradually becomes the primary
+conﬂict. To increase the distance di ﬀerence to the conﬂict
+point between them, vehicle #3, which is farther from the
+conﬂict point, decelerates. At T = 10 s and T = 11 s,
+vehicle #1 exits the conﬂict zone, transforming the game into
+a cooperative game between vehicles #2 and #3. At this time,
+vehicle #2 is closer to the conﬂict point and has a higher speed,
+so both vehicles can accelerate simultaneously to ensure safety
+beneﬁts while improving e ﬃciency.
+3) Scalability Analysis With Varying Number of Vehicles:
+To validate the model’s adaptability under varying tra ﬃc
+complexities and to demonstrate the scalability of the proposed
+method as the number of vehicles increases, multiple simula-
+tion scenarios were designed with 2, 4, 8, and 12 vehicles.
+Vehicles were evenly distributed across the entrance lanes of
+the intersection (e.g., 3 vehicles per direction in the 12-vehicle
+scenario). For each case, ten di ﬀerent random seeds were
+used to generate diverse initial conditions, including the initial
+vehicle positions (randomly distributed between 50 and 150
+m from the intersection), vehicle types (CA V /HDV randomly
+assigned), and ﬂow directions (left-turn/straight randomly set).
+The performance was evaluated in terms of safety (PET) and
+eﬃciency (average speed), as shown in Fig. 6.
+In the two-vehicle scenario, the interaction is minimal,
+leading to high passing speed and relatively large PET values.
+In the four-vehicle scenario, the interaction becomes more
+intense, resulting in lower average speed and reduced PET
+values, although PET remains above 1.1 s, ensuring safety. In
+the more complex 8- and 12-vehicle scenarios, the interaction
+becomes highly intense and intricate. However, by leverag-
+ing the proposed cooperative subgroup division mechanism,
+our method remains applicable, maintaining safe operation
+(PET > 1.0 s) and achieving relatively high passing speeds
+(average speed > 4 m /s), demonstrating the scalability and
+eﬀectiveness of the proposed approach.
+B. Hardware-in-the-Loop and Human-in-the-Loop
+Experiment of CAV Cooperative Method
+A hardware-in-the-loop and human-in-the-loop experimen-
+tal platform is developed using CARLA. Within CARLA,
+a map identical to the experimental test ﬁeld of Tongji
+University’s Intelligent Connected Vehicle Evaluation Base is
+constructed, and a typical cross intersection within this map
+is selected as the experimental scenario. The construction of
+this experimental platform is completed in the Ubuntu 20.04
+operating system environment, utilizing Robot Operating
+System 2 (ROS2).
+In the implementation of the domain control in-the-loop
+simulation environment, several steps are undertaken to ensure
+eﬃcient system integration and operation. Initially, the host
+environment is set up, followed by the deployment of a custom
+Docker container. The host then subscribes to various topics
+deﬁned by CARLA to gather position, speed, or acceleration
+data of all tra ﬃc participants, including CA Vs and HDVs.
+These data are used to compute cooperative control outcomes.
+Subsequently, a new topic is created on the host as an inter-
+mediary for publishing vehicle control messages. Within the
+domain control Docker, ROS2 equipped with the rclpy library
+subscribes to receive these messages and publishes them to
+Authorized licensed use limited to: Cornell University Library. Downloaded on March 06,2026 at 08:06:00 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+===== PAGE 13 =====
+1536 IEEE INTERNET OF THINGS JOURNAL, VOL. 13, NO. 1, 1 JANUARY 2026
+Fig. 8. Speed curve of vehicles during experiment under Scenario-(1).
+a dedicated topic for vehicle control, thereby enabling direct
+command of the vehicle. This structured approach facilitates
+a robust simulation environment that e ﬀectively integrates
+multiple components and data streams for real-time vehicle
+management. To establish human-in-the-loop experimental
+conditions, there is a unit external Logitech steering wheel
+and pedals (Model G29), and the human driver controls the
+HDV in CARLA through the steering wheel and pedals.
+Research indicates that planning a left turn can be partic-
+ularly challenging for an A V in heavy tra ﬃc [45]. The ﬁrst
+experiment involves a scenario of an unprotected left turn
+with two CA Vs to verify the possibility of CA V cooperative
+algorithm deployment and application under purely CA Vs.
+Approaching from opposite directions of the intersection, one
+vehicle proceeds straight, while the other executes a left turn
+shown in Fig. 7-Scenario-(1).
+The scalar instantaneous speed of two CA Vs, collected
+during their driving by CARLA, is recorded and plotted in
+Fig. 8. Observing the speed curves of the two vehicles, around
+5 s, both vehicles enter the predeﬁned interaction range.
+According to the model’s calculations, Veh3 decelerates to
+yield while Veh1 continues to accelerate, thereby resolving
+the conﬂict. At about 8 s, Veh1 nearly reached its maximum
+speed through acceleration and was the ﬁrst to exit the conﬂict
+point, while Veh3 accelerated through the area. The god’s-eye
+view and each vehicle’s perspective videos of the experiment
+can be found on https: //yimcui.github.io/Cooperative-driving/.
+Additionally, the PET value recorded during the interaction
+between the two vehicles is 3.5 s, indicating that the algorithm
+has achieved conﬂict resolution.
+In order to verify the e ﬀectiveness of the cooperative
+algorithm and the twin game in the mixed tra ﬃc scenario,
+the second experiment is conducted in the scenario of three
+CA Vs and one HDV shown in Fig. 7-Scenario-(2). Three
+subjects with di ﬀerent driving styles are selected to complete
+the driving task of HDV and interact with three CA Vs in the
+designed scenario. The states of vehicles are collected at each
+step during the experiment for analysis, including the position,
+speed, and acceleration information of each vehicle.
+Three drivers have participated in this experiment. We select
+the experimental results from one of the drivers and analyze
+the states of vehicles at several key moments as the vehicles
+pass through the intersection. Additionally, the acceleration
+curve of the HDV and the changes in the twin parameters are
+plotted, as shown in Fig. 9(b). Observing the HDV during the
+Fig. 9. Vehicle interaction status information in one experiment under
+Scenario-(2). (a) Vehicle position states at di ﬀerent moments during the
+interaction process. (b) Calculated and real acceleration curve and twin
+parameter of HDV .
+4–13-s interval, when it is within the interaction range consid-
+ered by the model, the calculated acceleration values closely
+matched the actual values in terms of both overall trend and
+magnitude. During the vehicle’s operation, the twin parameters
+are updated according to the rules described in Section IV-B.
+The optimal twin parameter values for di ﬀerent drivers have
+not exhibited drastic changes as seen in simulations but rather
+tend to stabilize. Moreover, the optimal twin parameter values
+vary across di ﬀerent drivers.
+PETs between each pair of vehicles during the crossing
+process are also calculated, with the overall PET values falling
+within the safe range. The minimum PET between Veh3 and
+Veh0 is 1.20 s. This can be attributed to the fact that the
+HDV had a certain blind spot in its ﬁeld of vision, preventing
+it from accurately observing the approaching Veh3 from the
+left, leading to an acceleration action contrary to the expected
+deceleration. Another reason is that Veh0 and Veh3 were the
+last two vehicles to leave the intersection, and after Veh0 exited
+the conﬂict zone, the algorithm deemed all conﬂicts resolved,
+prompting Veh3 to accelerate with maximum acceleration,
+further reducing the PET value.
+VI. C ONCLUSION
+Given the complexities of mixed traﬃc scenarios, especially
+at unsignalized intersections where HDVs and CA Vs coexist,
+existing research exhibits signiﬁcant limitations. Key short-
+comings include inadequate exploration of the interactions
+Authorized licensed use limited to: Cornell University Library. Downloaded on March 06,2026 at 08:06:00 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+===== PAGE 14 =====
+CUI et al.: GAME-THEORETIC FRAMEWORK OF INTERACTION AND COOPERATIVE DRIVING FOR CA Vs 1537
+between CA Vs and HDVs, as well as insuﬃcient internal coor-
+dination among CA Vs. Furthermore, there is a lack of accurate
+representation of HDVs’ dynamic interactive behaviors. We
+propose a game-based framework for cooperative driving at
+mixed unsignalized intersections, and the main conclusions
+are summarized as follows.
+1) Mixed Traﬃc Cooperation Framework: This study pro-
+poses a comprehensive framework that simultaneously
+considers the collaboration among CA Vs and the interac-
+tion between CA Vs and HDVs in mixed traﬃc scenarios.
+This framework more closely aligns with real-world
+human–machine mixed driving scenarios and e ﬀectively
+addresses the safety and e ﬃciency issues faced by
+autonomous driving from an individual vehicle perspec-
+tive when encountering HDVs and other CA Vs.
+2) Dynamic Adjustment for HDVs: The study introduces a
+parameter updating mechanism based on twin games,
+crucial for adapting to real-world mixed tra ﬃc inter-
+actions between HDVs and CA Vs. This innovative
+mechanism dynamically adjusts HDV parameters to
+better predict and respond to variable human driving
+behaviors. By enhancing the accuracy and reliability
+of these predictions, the model signiﬁcantly improves
+the safety and e ﬃciency of HDV–CA V interactions,
+addressing critical challenges in ADSs.
+3) Algorithm Validation and Experimentation: The val-
+idation of the proposed algorithms was rigorously
+conducted through a two-phase approach, beginning
+with detailed numerical simulations to reﬁne the models
+under various tra ﬃc scenarios. This was followed by
+extensive real-world testing, including hardware-in-the-
+loop and human-in-the-loop experiments. These stages
+were crucial for demonstrating the algorithms’ e ﬀec-
+tiveness and adaptability in actual driving conditions,
+proving their potential to enhance safety and e ﬃciency
+in dynamic tra ﬃc environments.
+In future work, we will focus on further optimizing the
+model and apply it to continuous traﬃc ﬂow and other complex
+driving conﬂict scenarios.
+REFERENCES
+[1] A. Alessandrini, A. Campagna, P. D. Site, F. Filippi, and L. Persia,
+“Automated vehicles and the rethinking of mobility and cities,” Transp.
+Res. Proc., vol. 5, pp. 145–160, Jan. 2015.
+[2] D. Song, B. Zhu, J. Zhao, and J. Han, “Human–machine shared lateral
+control strategy for intelligent vehicles based on human driver risk
+perception reliability,” Automot. Innov., vol. 7, no. 1, pp. 102–120, Feb.
+2024.
+[3] A. Sharma, Y . Ali, M. Saifuzzaman, Z. Zheng, and M. M. Haque,
+“Human factors in modelling mixed tra ﬃc of traditional, connected,
+and automated vehicles,” in Adv. Human Factors Simul. Model., Proc.
+AHFE Int. Conf. Human Factors Simul. Model., Los Angeles, California.
+Cham, Switzerland: Springer, Jul. 2017, pp. 262–273.
+[4] Summary Report: Standing General Order on Crash Reporting for Level
+2 Advanced Driver Assistance Systems , N. H. T. S. Administration,
+Bergeijk, The Netherlands, 2022.
+[5] S. Noh, “Decision-making framework for autonomous driving at road
+intersections: Safeguarding against collision, overly conservative behav-
+ior, and violation vehicles,” IEEE Trans. Ind. Electron. , vol. 66, no. 4,
+pp. 3275–3286, Apr. 2019.
+[6] W. Zhan, C. Liu, C.-Y . Chan, and M. Tomizuka, “A non-conservatively
+defensive strategy for urban autonomous driving,” in Proc. IEEE 19th
+Int. Conf. Intell. Transp. Syst. (ITSC) , Nov. 2016, pp. 459–464.
+[7] Taxonomy and Deﬁnitions for Terms Related To Cooperative Driving
+Automation for On-road Motor Vehicles , SAE, Warrendale, PA, USA,
+2020.
+[8] I. O. Olayode, L. K. Tartibu, M. O. Okwu, and A. Severino,
+“Comparative traﬃc ﬂow prediction of a heuristic ANN model and a
+hybrid ANN-PSO model in the tra ﬃc ﬂow modelling of vehicles at a
+four-way signalized road intersection,” Sustainability, vol. 13, no. 19,
+p. 10704, Sep. 2021.
+[9] S. Mariani, G. Cabri, and F. Zambonelli, “Coordination of autonomous
+vehicles: Taxonomy and survey,” ACM Comput. Surveys, vol. 54, no. 1,
+pp. 1–33, Jan. 2022.
+[10] K. Dresner and P. Stone, “A multiagent approach to autonomous
+intersection management,” J. Artif. Intell. Res. , vol. 31, pp. 591–656,
+Mar. 2008.
+[11] L. Chen and C. Englund, “Cooperative intersection management: A
+survey,” IEEE Trans. Intell. Transp. Syst. , vol. 17, no. 2, pp. 570–586,
+Feb. 2016.
+[12] D. Carlino, S. D. Boyles, and P. Stone, “Auction-based autonomous
+intersection management,” in Proc. 16th Int. IEEE Conf. Intell. Transp.
+Syst. (ITSC), Oct. 2013, pp. 529–534.
+[13] C. Chen, Q. Xu, M. Cai, J. Wang, J. Wang, and K. Li, “Conﬂict-free
+cooperation method for connected and automated vehicles at unsignal-
+ized intersections: Graph-based modeling and optimality analysis,” IEEE
+Trans. Intell. Transp. Syst. , vol. 23, no. 11, pp. 21897–21914, Nov.
+2022.
+[14] H. Xu, Y . Zhang, L. Li, and W. Li, “Cooperative driving at unsignalized
+intersections using tree search,” IEEE Trans. Intell. Transp. Syst. ,
+vol. 21, no. 11, pp. 4563–4571, Nov. 2020.
+[15] B. Xu et al., “Distributed conﬂict-free cooperation for multiple con-
+nected vehicles at unsignalized intersections,” Transp. Res. C, Emerg.
+Technol., vol. 93, pp. 322–334, Aug. 2018.
+[16] X. Pan, B. Chen, S. Timotheou, and S. A. Evangelou, “A convex optimal
+control framework for autonomous vehicle intersection crossing,” IEEE
+Trans. Intell. Transp. Syst. , vol. 24, no. 1, pp. 163–177, Jan. 2023.
+[17] J. Ma, X. Li, F. Zhou, J. Hu, and B. B. Park, “Parsimonious shooting
+heuristic for trajectory design of connected automated tra ﬃc part II:
+Computational issues and optimization,” Transp. Res. B, Methodol. ,
+vol. 95, pp. 421–441, Jan. 2017.
+[18] Z. Sun, T. Huang, and P. Zhang, “Cooperative decision-making for
+mixed tra ﬃc: A ramp merging example,” Transp. Res. C, Emerg.
+Technol., vol. 120, Nov. 2020, Art. no. 102764.
+[19] M. Karimi, C. Roncoli, C. Alecsandru, and M. Papageorgiou,
+“Cooperative merging control via trajectory optimization in mixed
+vehicular traﬃc,” Transp. Res. C, Emerg. Technol. , vol. 116, Jul. 2020,
+Art. no. 102663.
+[20] M. A. S. Kamal, J.-I. Imura, T. Hayakawa, A. Ohata, and K. Aihara,
+“A vehicle-intersection coordination scheme for smooth ﬂows of tra ﬃc
+without using tra ﬃc lights,” IEEE Trans. Intell. Transp. Syst. , vol. 16,
+no. 3, pp. 1136–1147, Jun. 2015.
+[21] A. Oroojlooy and D. Hajinezhad, “A review of cooperative multi-agent
+deep reinforcement learning,” Int. J. Speech Technol. , vol. 53, no. 11,
+pp. 13677–13722, Jun. 2023.
+[22] A. Irshayyid, J. Chen, and G. Xiong, “A review on reinforcement
+learning-based highway autonomous vehicle control,” Green Energy
+Intell. Transp., vol. 3, no. 4, Aug. 2024, Art. no. 100156.
+[23] W. Zhou, D. Chen, J. Yan, Z. Li, H. Yin, and W. Ge, “Multi-agent
+reinforcement learning for cooperative lane changing of connected and
+autonomous vehicles in mixed tra ﬃc,” Auto. Intell. Syst. , vol. 2, no. 1,
+p. 5, Dec. 2022.
+[24] S. Zhou, W. Zhuang, G. Yin, H. Liu, and C. Qiu, “Cooperative on-ramp
+merging control of connected and automated vehicles: Distributed multi-
+agent deep reinforcement learning approach,” in Proc. IEEE 25th Int.
+Conf. Intell. Transp. Syst. (ITSC) , Oct. 2022, pp. 402–408.
+[25] G.-P. Antonio and C. Maria-Dolores, “Multi-agent deep reinforcement
+learning to manage connected autonomous vehicles at tomorrow’s
+intersections,” IEEE Trans. Veh. Technol., vol. 71, no. 7, pp. 7033–7043,
+Jul. 2022.
+[26] S. Gu et al., “Safe multi-agent reinforcement learning for multi-robot
+control,” Artif. Intell., vol. 319, Jun. 2023, Art. no. 103905.
+[27] T. Wang, M. Ma, S. Liang, J. Yang, and Y . Wang, “Robust lane change
+decision for autonomous vehicles in mixed traﬃc: A safety-aware multi-
+agent adversarial reinforcement learning approach,” Transp. Res. C,
+Emerg. Technol., vol. 172, Mar. 2025, Art. no. 105005.
+[28] Y . Guo, J. Liu, R. Yu, P. Hang, and J. Sun, “MAPPO-PIS: A multi-
+agent proximal policy optimization method with prior intent sharing for
+CA Vs’ cooperative decision-making,” in Proc. Eur. Conf. Comput. Vis.,
+2024, pp. 244–263.
+Authorized licensed use limited to: Cornell University Library. Downloaded on March 06,2026 at 08:06:00 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+===== PAGE 15 =====
+1538 IEEE INTERNET OF THINGS JOURNAL, VOL. 13, NO. 1, 1 JANUARY 2026
+[29] D. Chen et al., “Deep multi-agent reinforcement learning for highway
+on-ramp merging in mixed tra ﬃc,” IEEE Trans. Intell. Transp. Syst. ,
+vol. 24, no. 11, pp. 11623–11638, Nov. 2023.
+[30] Z. Yang, H. Huang, G. Wang, X. Pei, and D.-Y . Yao, “Cooperative
+driving model for non-signalized intersections with cooperative games,”
+J. Central South Univ. , vol. 25, no. 9, pp. 2164–2181, Sep. 2018.
+[31] R. Tian, N. Li, I. Kolmanovsky, Y . Yildiz, and A. R. Girard, “Game-
+theoretic modeling of tra ﬃc in unsignalized intersection network for
+autonomous vehicle control veriﬁcation and validation,” IEEE Trans.
+Intell. Transp. Syst. , vol. 23, no. 3, pp. 2211–2226, Mar. 2022.
+[32] K. Liu, N. Li, H. E. Tseng, I. Kolmanovsky, and A. Girard, “Interaction-
+aware trajectory prediction and planning for autonomous vehicles in
+forced merge scenarios,” IEEE Trans. Intell. Transp. Syst., vol. 24, no. 1,
+pp. 474–488, Jan. 2023.
+[33] Q. Zhang, R. Langari, H. E. Tseng, D. Filev, S. Szwabowski, and
+S. Coskun, “A game theoretic model predictive controller with aggres-
+siveness estimation for mandatory lane change,” IEEE Trans. Intell.
+Vehicles, vol. 5, no. 1, pp. 75–89, Mar. 2020.
+[34] H. Wang, Q. Meng, S. Chen, and X. Zhang, “Competitive and cooper-
+ative behaviour analysis of connected and autonomous vehicles across
+unsignalised intersections: A game-theoretic approach,” Transp. Res. B,
+Methodol., vol. 149, pp. 322–346, Jul. 2021.
+[35] X. Liao et al., “Game theory-based ramp merging for mixed tra ﬃc with
+unity-SUMO co-simulation,” IEEE Trans. Syst., Man, Cybern., Syst. ,
+vol. 52, no. 9, pp. 5746–5757, Sep. 2022.
+[36] L. Li, W. Zhao, and C. Wang, “Cooperative merging strategy considering
+stochastic driving style at on-ramps: A Bayesian game approach,”
+Automot. Innov., vol. 7, no. 2, pp. 312–334, May 2024.
+[37] N. Li, Y . Yao, I. Kolmanovsky, E. Atkins, and A. R. Girard,
+“Game-theoretic modeling of multi-vehicle interactions at uncon-
+trolled intersections,” IEEE Trans. Intell. Transp. Syst. , vol. 23, no. 2,
+pp. 1428–1442, Feb. 2022.
+[38] P. Hang, C. Lv, Y . Xing, C. Huang, and Z. Hu, “Human-like
+decision making for autonomous driving: A noncooperative game
+theoretic approach,” IEEE Trans. Intell. Transp. Syst. , vol. 22, no. 4,
+pp. 2076–2087, Apr. 2021.
+[39] V .-A. Le and A. A. Malikopoulos, “A cooperative optimal control
+framework for connected and automated vehicles in mixed tra ﬃc using
+social value orientation,” in Proc. IEEE 61st Conf. Decis. Control
+(CDC), Dec. 2022, pp. 6272–6277.
+[40] A. G. Cunningham, E. Galceran, R. M. Eustice, and E. Olson, “MPDM:
+Multipolicy decision-making in dynamic, uncertain environments for
+autonomous driving,” in Proc. IEEE Int. Conf. Robot. Autom. (ICRA) ,
+May 2015, pp. 1670–1677.
+[41] C. Hubmann, J. Schulz, M. Becker, D. Altho ﬀ, and C. Stiller,
+“Automated driving in uncertain environments: Planning with interaction
+and uncertain maneuver prediction,” IEEE Trans. Intell. Vehicles, vol. 3,
+no. 1, pp. 5–17, Mar. 2018.
+[42] R. Xing, Z. Su, Q. Xu, N. Zhang, and T. H. Luan, “Secure content
+delivery for connected and autonomous trucks: A coalition formation
+game approach,” IEEE Trans. Intell. Transp. Syst. , vol. 23, no. 11,
+pp. 20522–20537, Nov. 2022.
+[43] Q. Zhang, R. Langari, H. E. Tseng, S. Mohan, S. Szwabowski, and
+D. Filev, “Stackelberg di ﬀerential lane change game based on MPC
+and inverse MPC,” IEEE Trans. Intell. Transp. Syst. , vol. 25, no. 8,
+pp. 8473–8485, Aug. 2024.
+[44] E. Leurent. (2018). An Environment for Autonomous Driving Decision-
+Making. [Online]. Available: https: //github.com/eleurent/highway-env
+[45] W. Schwarting, A. Pierson, J. Alonso–Mora, S. Karaman, and D. Rus,
+“Social behavior for autonomous vehicles,” Proc. Nat. Acad. Sci. USA ,
+vol. 116, no. 50, pp. 24972–24978, 2019.
+Yiming Cui received the B.S. degree in transporta-
+tion engineering from Tongji University, Shanghai,
+China, in 2023, where she is currently pursuing
+the Ph.D. degree with the Department of Tra ﬃc
+Engineering.
+Her main research interests include decision-
+making and motion planning for autonomous vehi-
+cles in the context of vehicle–infrastructure and
+vehicle–vehicle collaboration.
+Shiyu Fang received the B.S. degree in transporta-
+tion engineering from Jilin University, Changchun,
+China, in 2021. He is currently pursuing the Ph.D.
+degree with the Department of Tra ﬃc Engineering,
+Tongji University, Shanghai, China.
+His main research interests include decision-
+making and motion planning for autonomous vehi-
+cles.
+Qian Chen received the B.S. degree in transporta-
+tion engineering from Tongji University, Shanghai,
+China, in 2023, where he is currently pursuing
+the Ph.D. degree with the Department of Tra ﬃc
+Engineering.
+His main research interests include behavior pre-
+diction and decision-making of autonomous vehicles
+based on data-driven methods.
+Yafei Wang (Member, IEEE) received the B.S.
+degree in internal combustion engine from Jilin
+University, Changchun, China, in 2005, the M.S.
+degree in vehicle engineering from Shanghai Jiao
+Tong University, Shanghai, China, in 2008, and the
+Ph.D. degree in electrical engineering from The
+University of Tokyo, Tokyo, Japan, in 2013.
+From 2008 to 2010, he was with automotive
+industry for nearly two years. From 2013 to 2016, he
+was a Post-Doctoral Researcher with The University
+of Tokyo. He is currently a Professor with the School
+of Mechanical Engineering, Shanghai Jiao Tong University. His research
+interests include state estimation and control for connected and automated
+vehicles.
+Peng Hang (Senior Member, IEEE) received the
+Ph.D. degree from the School of Automotive Stud-
+ies, Tongji University, Shanghai, China, in 2019.
+He is a Research Professor at the Department
+of Traﬃc Engineering, Tongji University. He was a
+Visiting Researcher with the Department of Electri-
+cal and Computer Engineering, National University
+of Singapore, Singapore, in 2018. From 2020 to
+2022, he was a Research Fellow with the School
+of Mechanical and Aerospace Engineering, Nanyang
+Technological University, Singapore. His research
+interests include vehicle dynamics and control, decision-making, motion
+planning, and motion control for autonomous vehicles.
+Dr. Hang serves as an Associate Editor for IEEE T RANSACTIONS ON
+VEHICULAR TECHNOLOGY , Journal of Field Robotics, IET Smart Cities ,
+and SAE International Journal of Vehicle Dynamics, Stability, and NVH .
+Jian Sun (Senior Member, IEEE) received the Ph.D.
+degree from Tongji University, Shanghai, China, in
+2006.
+Subsequently, he was at Tongji University as a
+Lecturer and then promoted to the position as a Pro-
+fessor in 2011, where he is currently a Professor with
+the College of Transportation Engineering and the
+Dean of the Department of Tra ﬃc Engineering. His
+main research interests include tra ﬃc ﬂow theory,
+traﬃc simulation, connected vehicle–infrastructure
+system, and intelligent transportation systems.
+Authorized licensed use limited to: Cornell University Library. Downloaded on March 06,2026 at 08:06:00 UTC from IEEE Xplore.  Restrictions apply. 

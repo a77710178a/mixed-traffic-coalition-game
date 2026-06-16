@@ -1,0 +1,37 @@
+# Secrets
+服务器账号.txt
+*账号*.txt
+*.pem
+*.key
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Local environments
+.venv/
+venv/
+env/
+.env
+.env.*
+
+# SUMO/generated experiment outputs
+sim/prototype/networks/
+sim/prototype/routes/
+sim/prototype/logs/
+sim/prototype/labels/
+sim/prototype/reports/
+results/
+
+# Large local literature derivatives can be regenerated
+docs/literature/pdfs/
+docs/literature/page_images/
+
+# OS/editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
