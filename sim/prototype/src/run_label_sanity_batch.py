@@ -54,6 +54,9 @@ def run_batch(
                     "hdv_event_count": event_result.get("hdv_event_count", 0),
                     "cav_event_count": event_result.get("cav_event_count", 0),
                     "label_count": label_result.get("label_count", 0),
+                    "hdv_takes_priority_count": label_result.get("hdv_takes_priority_count", 0),
+                    "hdv_yields_by_priority_count": label_result.get("hdv_yields_by_priority_count", 0),
+                    "strict_non_yield_count": label_result.get("strict_non_yield_count", 0),
                     "non_yield_count": label_result.get("non_yield_count", 0),
                     "yield_count": label_result.get("yield_count", 0),
                     "high_confidence_count": label_result.get("high_confidence_count", 0),
@@ -69,8 +72,9 @@ def run_batch(
     out_csv = report_dir / "label_sanity_batch_summary.csv"
     fields = [
         "run_id", "seed", "volume", "penetration", "duration", "vehicle_count", "state_rows",
-        "event_count", "hdv_event_count", "cav_event_count", "label_count", "non_yield_count",
-        "yield_count", "high_confidence_count", "low_confidence_count",
+        "event_count", "hdv_event_count", "cav_event_count", "label_count",
+        "hdv_takes_priority_count", "hdv_yields_by_priority_count", "strict_non_yield_count",
+        "non_yield_count", "yield_count", "high_confidence_count", "low_confidence_count",
     ]
     write_csv(out_csv, rows, fields)
     totals = {
@@ -78,6 +82,9 @@ def run_batch(
         "vehicle_count": sum(int(row["vehicle_count"]) for row in rows),
         "event_count": sum(int(row["event_count"]) for row in rows),
         "label_count": sum(int(row["label_count"]) for row in rows),
+        "hdv_takes_priority_count": sum(int(row["hdv_takes_priority_count"]) for row in rows),
+        "hdv_yields_by_priority_count": sum(int(row["hdv_yields_by_priority_count"]) for row in rows),
+        "strict_non_yield_count": sum(int(row["strict_non_yield_count"]) for row in rows),
         "non_yield_count": sum(int(row["non_yield_count"]) for row in rows),
         "yield_count": sum(int(row["yield_count"]) for row in rows),
         "high_confidence_count": sum(int(row["high_confidence_count"]) for row in rows),
@@ -85,6 +92,9 @@ def run_batch(
     }
     totals["non_yield_ratio"] = (
         totals["non_yield_count"] / totals["label_count"] if totals["label_count"] else 0.0
+    )
+    totals["hdv_takes_priority_ratio"] = (
+        totals["hdv_takes_priority_count"] / totals["label_count"] if totals["label_count"] else 0.0
     )
     out_json = report_dir / "label_sanity_batch_summary.json"
     write_json(out_json, {"totals": totals, "runs": rows})
@@ -113,4 +123,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

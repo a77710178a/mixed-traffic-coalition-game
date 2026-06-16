@@ -37,7 +37,8 @@ def generate_labels(config_path: str, run_id_value: str) -> dict:
             hdv_entry = float(hdv["entry_time"])
             other_entry = float(other["entry_time"])
             hdv_min_accel = float(hdv["min_pre_zone_accel"])
-            non_yield = int((hdv_entry + epsilon_t < other_entry) and (hdv_min_accel > -yield_decel))
+            hdv_takes_priority = int(hdv_entry + epsilon_t < other_entry)
+            strict_non_yield = int(hdv_takes_priority and (hdv_min_accel > -yield_decel))
             entry_diff = other_entry - hdv_entry
             confidence = "high" if abs(entry_diff) > high_conf else "low"
             sample_id += 1
@@ -51,7 +52,9 @@ def generate_labels(config_path: str, run_id_value: str) -> dict:
                 "other_entry_time": f"{other_entry:.2f}",
                 "entry_time_diff_other_minus_hdv": f"{entry_diff:.2f}",
                 "hdv_min_pre_zone_accel": f"{hdv_min_accel:.3f}",
-                "non_yield": non_yield,
+                "hdv_takes_priority": hdv_takes_priority,
+                "strict_non_yield": strict_non_yield,
+                "non_yield": strict_non_yield,
                 "label_confidence": confidence,
                 "hdv_origin": hdv["origin"],
                 "hdv_movement": hdv["movement"],
@@ -63,12 +66,16 @@ def generate_labels(config_path: str, run_id_value: str) -> dict:
     fields = [
         "sample_id", "target_hdv", "interacting_vehicle", "interacting_vehicle_class", "zone_id",
         "hdv_entry_time", "other_entry_time", "entry_time_diff_other_minus_hdv", "hdv_min_pre_zone_accel",
-        "non_yield", "label_confidence", "hdv_origin", "hdv_movement", "other_origin", "other_movement",
+        "hdv_takes_priority", "strict_non_yield", "non_yield", "label_confidence",
+        "hdv_origin", "hdv_movement", "other_origin", "other_movement",
     ]
     write_csv(out_file, labels, fields)
     summary = {
         "run_id": run_id_value,
         "label_count": len(labels),
+        "hdv_takes_priority_count": sum(1 for row in labels if int(row["hdv_takes_priority"]) == 1),
+        "hdv_yields_by_priority_count": sum(1 for row in labels if int(row["hdv_takes_priority"]) == 0),
+        "strict_non_yield_count": sum(1 for row in labels if int(row["strict_non_yield"]) == 1),
         "non_yield_count": sum(1 for row in labels if int(row["non_yield"]) == 1),
         "yield_count": sum(1 for row in labels if int(row["non_yield"]) == 0),
         "high_confidence_count": sum(1 for row in labels if row["label_confidence"] == "high"),
@@ -91,4 +98,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

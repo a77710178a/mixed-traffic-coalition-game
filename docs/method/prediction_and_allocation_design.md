@@ -9,13 +9,14 @@ This document fixes the first implementable version of the prediction target and
 The first version should use:
 
 ```text
-Prediction target: yielding / non-yielding risk probability
+Primary prediction target: HDV takes-priority probability
+Auxiliary risk target: strict non-yielding probability
 Allocation rule: fairness-regularized greedy priority
 ```
 
 Rationale:
 
-- Yielding risk directly affects conflict-zone safety and passing-right allocation.
+- HDV priority-taking directly affects conflict-zone safety and passing-right allocation.
 - It is easier to label from SUMO trajectories than full multimodal trajectory prediction.
 - It aims to go beyond hand-crafted SVM-style intention classification by using temporal and graph interaction features.
 - A fairness-regularized greedy allocation is easier to implement than exact Shapley value and can still be compared with approximate Shapley later.
@@ -25,17 +26,21 @@ Rationale:
 For each HDV `h` and CAV or vehicle `i` that may conflict with `h` at conflict zone `z`, define a binary interaction label:
 
 ```text
-y_{h,i,z} = 1  if HDV h is likely to take priority / not yield
-y_{h,i,z} = 0  if HDV h is likely to yield
+y_{h,i,z}^{prio} = 1  if HDV h takes priority at the conflict zone
+y_{h,i,z}^{prio} = 0  if HDV h does not take priority
 ```
 
 The model predicts:
 
 ```text
-rho_{h,i,z} = P(y_{h,i,z} = 1 | X_{t-L:t}, G_t, Z)
+rho_{h,i,z} = P(y_{h,i,z}^{prio} = 1 | X_{t-L:t}, G_t, Z)
 ```
 
-where `rho_{h,i,z}` is the non-yielding risk probability used by the coalition value function.
+where `rho_{h,i,z}` is the HDV priority-taking probability used by the coalition value function. The stricter non-yield label is retained as an auxiliary risk indicator:
+
+```text
+y_{h,i,z}^{strict} = 1 if HDV h takes priority and does not strongly decelerate before z
+```
 
 ## 3. Label Generation From Simulation
 
@@ -50,23 +55,23 @@ v_h^-   : HDV speed before the conflict zone
 a_h^-   : HDV acceleration before the conflict zone
 ```
 
-The label can be assigned using a conservative rule:
+The primary label is assigned using observed crossing order:
 
 ```text
-y_{h,i,z} = 1 if tau_h^z < tau_i^z and h does not decelerate strongly before z
-y_{h,i,z} = 0 if tau_h^z > tau_i^z or h decelerates/yields before z
+y_{h,i,z}^{prio} = 1 if tau_h^z + epsilon_t < tau_i^z
+y_{h,i,z}^{prio} = 0 otherwise
 ```
 
-Operationally:
+The auxiliary strict label is:
 
 ```text
-y_{h,i,z} = 1 if tau_h^z + epsilon_t < tau_i^z and min(a_h^-) > -a_yield
-otherwise y_{h,i,z} = 0
+y_{h,i,z}^{strict} = 1 if tau_h^z + epsilon_t < tau_i^z and min(a_h^-) > -a_yield
+otherwise y_{h,i,z}^{strict} = 0
 ```
 
 where `epsilon_t` is a small time margin and `a_yield` is a yielding deceleration threshold.
 
-This label is intentionally close to the control problem: it measures whether the HDV is expected to take priority in a conflict interaction, not merely whether it turns left, goes straight, or turns right.
+This label is intentionally close to the control problem: it measures whether the HDV is expected to claim priority in a conflict interaction, not merely whether it turns left, goes straight, or turns right. A pilot stress batch produced a balanced `y^{prio}` distribution, while `y^{strict}` was sparse, so `y^{prio}` should be the first supervised target.
 
 ## 4. Model Inputs
 
@@ -149,7 +154,7 @@ If PET is unavailable in early SUMO logs, use TTCP first:
 R_{h,i,z} = max(0, TTCP_safe - |tau_h^z - tau_i^z|)
 ```
 
-This makes the prediction module decision-relevant: a high non-yielding probability increases the cost of passing patterns that rely on the HDV yielding.
+This makes the prediction module decision-relevant: a high HDV priority-taking probability increases the cost of passing patterns that rely on the HDV yielding.
 
 ## 8. Fairness-Regularized Greedy Allocation
 
@@ -237,7 +242,7 @@ First prototype:
 
 1. Build SUMO four-leg unsignalized intersection.
 2. Log vehicle states and conflict-zone crossing times.
-3. Generate `yield / non-yield` labels from observed crossing order and deceleration behavior.
+3. Generate `hdv_takes_priority` labels from observed crossing order and `strict_non_yield` auxiliary labels from crossing order plus deceleration behavior.
 4. Train constant-arrival, SVM/logistic, GRU-only, and GRU+graph predictors.
 5. Implement fairness-regularized greedy allocation using predicted risk.
 6. Compare against FCFS, rule-based yielding, generic game baseline, and ablations.

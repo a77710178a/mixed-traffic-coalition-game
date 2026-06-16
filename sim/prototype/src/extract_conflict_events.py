@@ -14,6 +14,7 @@ def extract_events(config_path: str, run_id_value: str) -> dict:
     zone = cfg["conflict_zones"][0]
     radius = float(zone["radius_m"])
     zone_id = zone["zone_id"]
+    pre_zone_window = float(cfg["label_thresholds"].get("pre_zone_window_s", 3.0))
 
     by_vehicle: dict[str, list[dict]] = defaultdict(list)
     for row in rows:
@@ -27,7 +28,10 @@ def extract_events(config_path: str, run_id_value: str) -> dict:
             continue
         entry = inside[0]
         exit_row = inside[-1]
-        pre_rows = [r for r in veh_rows if float(entry["time"]) - 3.0 <= float(r["time"]) <= float(entry["time"])]
+        pre_rows = [
+            r for r in veh_rows
+            if float(entry["time"]) - pre_zone_window <= float(r["time"]) <= float(entry["time"])
+        ]
         min_accel = min((float(r["acceleration"]) for r in pre_rows), default=0.0)
         min_speed = min((float(r["speed"]) for r in pre_rows), default=0.0)
         events.append({
@@ -74,4 +78,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
