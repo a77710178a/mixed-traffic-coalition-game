@@ -74,5 +74,6 @@ artifacts:
   label_sanity_pilot: docs/experiments/label_sanity_pilot_20260616.md
   stress_label_sanity: docs/experiments/stress_label_sanity_20260616.md
   prediction_dataset_build: docs/experiments/prediction_dataset_build_20260616.md
+  prediction_baseline_results: docs/experiments/prediction_baseline_results_20260616.md
   stress_scenario_config: sim/prototype/config/stress_scenario.json
   sumo_prototype_remote: /public/home/xiaohei_0/hx/my_paper01/sim/prototype

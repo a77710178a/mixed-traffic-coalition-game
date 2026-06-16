@@ -35,3 +35,16 @@ python src/build_prediction_dataset.py --run-id seed1_low_pen50 --high-confidenc
 Outputs are written under `logs/`, `labels/`, and `reports/`.
 
 Prediction datasets are written under `datasets/<run_id>/` as JSONL files. Each sample contains the HDV history, interacting-vehicle history, edge features, and the primary `hdv_takes_priority` label.
+
+## Prediction Baselines
+
+After building a merged prediction dataset, run:
+
+```bash
+python src/train_prediction_baselines.py \
+  --dataset datasets/stress_seed5_6_priority_hc/prediction_samples.jsonl \
+  --train-seeds 5 \
+  --test-seeds 6
+```
+
+This evaluates the constant-arrival rule and a lightweight logistic-regression baseline.
