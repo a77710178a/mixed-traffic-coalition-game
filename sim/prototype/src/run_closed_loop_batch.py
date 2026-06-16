@@ -22,6 +22,8 @@ SUMMARY_FIELDS = [
     "stop_count_proxy",
     "fairness_gini_waiting",
     "min_pairwise_ttc_proxy_s",
+    "max_release_count",
+    "safe_arrival_gap_s",
     "state_rows",
     "decision_rows",
 ]
@@ -74,6 +76,8 @@ def run_batch(
     hold_speed_mps: float,
     risk_threshold: float,
     fairness_weight: float,
+    max_release_count: int,
+    safe_arrival_gap_s: float,
     output_name: str,
 ) -> dict:
     ensure_dirs()
@@ -96,6 +100,8 @@ def run_batch(
                         hold_speed_mps=hold_speed_mps,
                         risk_threshold=risk_threshold,
                         fairness_weight=fairness_weight,
+                        max_release_count=max_release_count,
+                        safe_arrival_gap_s=safe_arrival_gap_s,
                         gui=False,
                     )
                     rows.append({field: summary.get(field) for field in SUMMARY_FIELDS})
@@ -119,6 +125,8 @@ def run_batch(
         "hold_speed_mps": hold_speed_mps,
         "risk_threshold": risk_threshold,
         "fairness_weight": fairness_weight,
+        "max_release_count": max_release_count,
+        "safe_arrival_gap_s": safe_arrival_gap_s,
         "run_count": len(rows),
         "runs_csv": str(runs_csv),
         "aggregate_csv": str(aggregate_csv),
@@ -140,6 +148,8 @@ def main() -> None:
     parser.add_argument("--hold-speed-mps", type=float, default=1.0)
     parser.add_argument("--risk-threshold", type=float, default=0.7)
     parser.add_argument("--fairness-weight", type=float, default=0.15)
+    parser.add_argument("--max-release-count", type=int, default=3)
+    parser.add_argument("--safe-arrival-gap-s", type=float, default=1.2)
     parser.add_argument("--output-name", default="closed_loop_pilot_seed7_9_low_medium_pen50")
     args = parser.parse_args()
 
@@ -154,6 +164,8 @@ def main() -> None:
         hold_speed_mps=args.hold_speed_mps,
         risk_threshold=args.risk_threshold,
         fairness_weight=args.fairness_weight,
+        max_release_count=args.max_release_count,
+        safe_arrival_gap_s=args.safe_arrival_gap_s,
         output_name=args.output_name,
     )
     print(json.dumps(summary, indent=2, ensure_ascii=False))

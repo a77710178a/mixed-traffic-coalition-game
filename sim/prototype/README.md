@@ -91,7 +91,11 @@ python src/run_closed_loop_batch.py \
   --penetrations 0.5 \
   --methods fcfs,prediction_fcfs,prediction_coalition \
   --duration 90 \
+  --max-release-count 3 \
+  --safe-arrival-gap-s 1.2 \
   --output-name closed_loop_pilot_seed7_8_low_medium_pen50_d90
 ```
 
 The current closed-loop policy is a development baseline. It controls CAVs only, observes HDVs, and writes per-run summaries plus aggregate CSV files under `reports/`.
+
+`prediction_coalition` forms a small release set rather than always releasing a single vehicle. The main knobs are `--max-release-count`, `--safe-arrival-gap-s`, and `--fairness-weight`.

@@ -107,6 +107,8 @@ def run_closed_loop_allocation(
     hold_speed_mps: float,
     risk_threshold: float,
     fairness_weight: float,
+    max_release_count: int,
+    safe_arrival_gap_s: float,
     gui: bool = False,
 ) -> dict[str, Path | str | float | int]:
     ensure_traci()
@@ -149,6 +151,8 @@ def run_closed_loop_allocation(
                 method=method,
                 risk_threshold=risk_threshold,
                 fairness_weight=fairness_weight,
+                max_release_count=max_release_count,
+                safe_arrival_gap_s=safe_arrival_gap_s,
             )
             actions = _apply_decision(traci, decision, candidates, hold_speed_mps, controlled_ids)
             min_ttc = _min_pairwise_ttc(candidates)
@@ -192,6 +196,7 @@ def run_closed_loop_allocation(
                     "time": f"{now:.2f}",
                     "candidate_count": len(candidates),
                     "release_order": "|".join(decision.release_order),
+                    "release_vehicles": "|".join(decision.release_vehicles or []),
                     "hold_vehicles": "|".join(decision.hold_vehicles),
                     "scores_json": json.dumps(decision.scores, sort_keys=True),
                 })
@@ -208,7 +213,11 @@ def run_closed_loop_allocation(
             "x", "y", "speed", "waiting_time", "distance_to_center", "control_action",
         ],
     )
-    write_csv(decision_file, decision_rows, ["time", "candidate_count", "release_order", "hold_vehicles", "scores_json"])
+    write_csv(
+        decision_file,
+        decision_rows,
+        ["time", "candidate_count", "release_order", "release_vehicles", "hold_vehicles", "scores_json"],
+    )
 
     vehicle_ids = set(first_seen) | set(last_seen)
     travel_times = [last_seen[veh_id] - first_seen[veh_id] for veh_id in vehicle_ids if veh_id in last_seen]
@@ -226,6 +235,8 @@ def run_closed_loop_allocation(
         "hold_speed_mps": hold_speed_mps,
         "risk_threshold": risk_threshold,
         "fairness_weight": fairness_weight,
+        "max_release_count": max_release_count,
+        "safe_arrival_gap_s": safe_arrival_gap_s,
         "vehicle_count_seen": len(vehicle_ids),
         "throughput_arrived": len(completed_ids),
         "mean_observed_travel_time_s": sum(travel_times) / len(travel_times) if travel_times else 0.0,
@@ -256,6 +267,8 @@ def main() -> None:
     parser.add_argument("--hold-speed-mps", type=float, default=1.0)
     parser.add_argument("--risk-threshold", type=float, default=0.7)
     parser.add_argument("--fairness-weight", type=float, default=0.15)
+    parser.add_argument("--max-release-count", type=int, default=3)
+    parser.add_argument("--safe-arrival-gap-s", type=float, default=1.2)
     parser.add_argument("--gui", action="store_true")
     args = parser.parse_args()
     outputs = run_closed_loop_allocation(
@@ -269,6 +282,8 @@ def main() -> None:
         hold_speed_mps=args.hold_speed_mps,
         risk_threshold=args.risk_threshold,
         fairness_weight=args.fairness_weight,
+        max_release_count=args.max_release_count,
+        safe_arrival_gap_s=args.safe_arrival_gap_s,
         gui=args.gui,
     )
     print(json.dumps({key: str(value) if isinstance(value, Path) else value for key, value in outputs.items()}, indent=2))

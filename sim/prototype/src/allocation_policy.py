@@ -18,6 +18,7 @@ class AllocationDecision:
     release_order: list[str]
     hold_vehicles: list[str]
     scores: dict[str, float]
+    release_vehicles: list[str] | None = None
 
 
 def estimate_arrival_time(vehicle: VehicleState, min_speed: float = 1.0) -> float:
@@ -54,6 +55,45 @@ def _prediction_coalition_score(
     return arrival - fairness_credit - risk_credit
 
 
+def _is_close_arrival(a: VehicleState, b: VehicleState, safe_arrival_gap_s: float) -> bool:
+    return abs(estimate_arrival_time(a) - estimate_arrival_time(b)) < safe_arrival_gap_s
+
+
+def _select_release_set(
+    ordered: list[VehicleState],
+    method: str,
+    risk_threshold: float,
+    max_release_count: int,
+    safe_arrival_gap_s: float,
+) -> list[str]:
+    if not ordered:
+        return []
+    if method != "prediction_coalition":
+        return [ordered[0].veh_id]
+
+    release: list[VehicleState] = []
+    high_risk_hdvs = [
+        vehicle
+        for vehicle in ordered
+        if vehicle.veh_class.upper() == "HDV" and vehicle.priority_probability >= risk_threshold
+    ]
+
+    for vehicle in ordered:
+        if len(release) >= max(1, int(max_release_count)):
+            break
+        if any(_is_close_arrival(vehicle, selected, safe_arrival_gap_s) for selected in release):
+            continue
+        if vehicle.veh_class.upper() == "CAV" and any(
+            _is_close_arrival(vehicle, hdv, safe_arrival_gap_s) and hdv.veh_id not in {item.veh_id for item in release}
+            for hdv in high_risk_hdvs
+        ):
+            continue
+        release.append(vehicle)
+    if not release:
+        release.append(ordered[0])
+    return [vehicle.veh_id for vehicle in release]
+
+
 def build_decision(
     vehicles: list[VehicleState],
     method: str,
@@ -61,9 +101,11 @@ def build_decision(
     fairness_weight: float = 0.0,
     hdv_priority_bonus: float = 8.0,
     release_count: int = 1,
+    max_release_count: int | None = None,
+    safe_arrival_gap_s: float = 1.2,
 ) -> AllocationDecision:
     if not vehicles:
-        return AllocationDecision(release_order=[], hold_vehicles=[], scores={})
+        return AllocationDecision(release_order=[], hold_vehicles=[], scores={}, release_vehicles=[])
 
     if method == "fcfs":
         scores = {vehicle.veh_id: _fcfs_score(vehicle) for vehicle in vehicles}
@@ -80,17 +122,28 @@ def build_decision(
     else:
         raise ValueError(f"Unknown allocation method: {method}")
 
-    release_order = [
-        vehicle.veh_id
-        for vehicle in sorted(
-            vehicles,
-            key=lambda item: (
-                scores[item.veh_id],
-                estimate_arrival_time(item),
-                item.veh_id,
-            ),
-        )
-    ]
-    release_set = set(release_order[: max(1, int(release_count))])
+    ordered = sorted(
+        vehicles,
+        key=lambda item: (
+            scores[item.veh_id],
+            estimate_arrival_time(item),
+            item.veh_id,
+        ),
+    )
+    release_order = [vehicle.veh_id for vehicle in ordered]
+    release_limit = release_count if max_release_count is None else max_release_count
+    release_vehicles = _select_release_set(
+        ordered=ordered,
+        method=method,
+        risk_threshold=risk_threshold,
+        max_release_count=release_limit,
+        safe_arrival_gap_s=safe_arrival_gap_s,
+    )
+    release_set = set(release_vehicles)
     hold_vehicles = [veh_id for veh_id in release_order if veh_id not in release_set]
-    return AllocationDecision(release_order=release_order, hold_vehicles=hold_vehicles, scores=scores)
+    return AllocationDecision(
+        release_order=release_order,
+        hold_vehicles=hold_vehicles,
+        scores=scores,
+        release_vehicles=release_vehicles,
+    )
