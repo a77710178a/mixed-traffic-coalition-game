@@ -51,11 +51,11 @@ device: CUDA
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
 | Constant-arrival rule, 3 s horizon | 0.8371 | 0.8288 | 0.8320 | 0.8304 | 0.8180 | 213 | 234 | 44 | 43 |
 | Logistic regression, 3 s horizon | 0.9551 | 0.9496 | 0.9570 | 0.9533 | 0.9884 | 245 | 265 | 13 | 11 |
-| GRU-only, 3 s horizon | 0.9625 | 0.9574 | 0.9648 | 0.9611 | 0.9928 | 247 | 267 | 11 | 9 |
+| GRU-only, 3 s horizon | 0.9663 | 0.9612 | 0.9688 | 0.9650 | 0.9941 | 248 | 268 | 10 | 8 |
 
 ## Interpretation
 
-GRU-only improves slightly over logistic regression on the current split. The gain is modest, which means the current problem is still largely explainable by near-conflict kinematic features. This is useful evidence, not a problem: it tells us that the next claimed contribution should not be "GRU alone is dramatically better."
+GRU-only improves over logistic regression on the current split. The gain is modest, which means the current problem is still largely explainable by near-conflict kinematic features. This is useful evidence, not a problem: it tells us that the next claimed contribution should not be "GRU alone is dramatically better."
 
 The next meaningful test is whether an interaction-aware graph or edge-attention module can improve over GRU-only, especially under harder splits or longer prediction horizons.
 
@@ -80,4 +80,3 @@ The key comparison will be:
 ```text
 GRU + edge features vs. GRU-only
 ```
-

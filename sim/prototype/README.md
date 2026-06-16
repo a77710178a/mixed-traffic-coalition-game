@@ -57,3 +57,12 @@ python src/train_gru_predictor.py \
   --train-seeds 5 \
   --test-seeds 6
 ```
+
+For the GRU + edge-feature predictor, run:
+
+```bash
+python src/train_gru_edge_predictor.py \
+  --dataset datasets/stress_seed5_6_priority_hc_h3/prediction_samples.jsonl \
+  --train-seeds 5 \
+  --test-seeds 6
+```
