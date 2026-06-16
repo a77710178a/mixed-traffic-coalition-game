@@ -22,6 +22,12 @@ SUMMARY_FIELDS = [
     "stop_count_proxy",
     "fairness_gini_waiting",
     "min_pairwise_ttc_proxy_s",
+    "occupancy_count",
+    "conflict_pair_count",
+    "near_conflict_count",
+    "min_pet_s",
+    "mean_pet_s",
+    "min_entry_gap_s",
     "max_release_count",
     "safe_arrival_gap_s",
     "state_rows",
@@ -54,6 +60,12 @@ def aggregate_rows(rows: list[dict]) -> list[dict]:
         "stop_count_proxy",
         "fairness_gini_waiting",
         "min_pairwise_ttc_proxy_s",
+        "occupancy_count",
+        "conflict_pair_count",
+        "near_conflict_count",
+        "min_pet_s",
+        "mean_pet_s",
+        "min_entry_gap_s",
     ]
     for method, method_rows in sorted(groups.items()):
         out = {"method": method, "run_count": len(method_rows)}
@@ -78,6 +90,7 @@ def run_batch(
     fairness_weight: float,
     max_release_count: int,
     safe_arrival_gap_s: float,
+    near_conflict_pet_s: float,
     output_name: str,
 ) -> dict:
     ensure_dirs()
@@ -102,6 +115,7 @@ def run_batch(
                         fairness_weight=fairness_weight,
                         max_release_count=max_release_count,
                         safe_arrival_gap_s=safe_arrival_gap_s,
+                        near_conflict_pet_s=near_conflict_pet_s,
                         gui=False,
                     )
                     rows.append({field: summary.get(field) for field in SUMMARY_FIELDS})
@@ -127,6 +141,7 @@ def run_batch(
         "fairness_weight": fairness_weight,
         "max_release_count": max_release_count,
         "safe_arrival_gap_s": safe_arrival_gap_s,
+        "near_conflict_pet_s": near_conflict_pet_s,
         "run_count": len(rows),
         "runs_csv": str(runs_csv),
         "aggregate_csv": str(aggregate_csv),
@@ -150,6 +165,7 @@ def main() -> None:
     parser.add_argument("--fairness-weight", type=float, default=0.15)
     parser.add_argument("--max-release-count", type=int, default=3)
     parser.add_argument("--safe-arrival-gap-s", type=float, default=1.2)
+    parser.add_argument("--near-conflict-pet-s", type=float, default=1.5)
     parser.add_argument("--output-name", default="closed_loop_pilot_seed7_9_low_medium_pen50")
     args = parser.parse_args()
 
@@ -166,6 +182,7 @@ def main() -> None:
         fairness_weight=args.fairness_weight,
         max_release_count=args.max_release_count,
         safe_arrival_gap_s=args.safe_arrival_gap_s,
+        near_conflict_pet_s=args.near_conflict_pet_s,
         output_name=args.output_name,
     )
     print(json.dumps(summary, indent=2, ensure_ascii=False))

@@ -11,6 +11,7 @@ from common import PROTOTYPE_ROOT, distance, ensure_dirs, load_config, run_id, w
 from generate_network import generate_network
 from generate_routes import build_routes
 from run_sumo import ensure_traci, load_route_meta, read_junction_center
+from safety_metrics import write_safety_outputs
 
 
 def _priority_probability(vehicle: VehicleState, candidates: list[VehicleState]) -> float:
@@ -109,6 +110,7 @@ def run_closed_loop_allocation(
     fairness_weight: float,
     max_release_count: int,
     safe_arrival_gap_s: float,
+    near_conflict_pet_s: float,
     gui: bool = False,
 ) -> dict[str, Path | str | float | int]:
     ensure_traci()
@@ -218,6 +220,13 @@ def run_closed_loop_allocation(
         decision_rows,
         ["time", "candidate_count", "release_order", "release_vehicles", "hold_vehicles", "scores_json"],
     )
+    zone_radius_m = float(cfg["conflict_zones"][0]["radius_m"])
+    safety = write_safety_outputs(
+        states_csv=state_file,
+        output_dir=log_dir,
+        zone_radius_m=zone_radius_m,
+        near_conflict_pet_s=near_conflict_pet_s,
+    )
 
     vehicle_ids = set(first_seen) | set(last_seen)
     travel_times = [last_seen[veh_id] - first_seen[veh_id] for veh_id in vehicle_ids if veh_id in last_seen]
@@ -237,6 +246,8 @@ def run_closed_loop_allocation(
         "fairness_weight": fairness_weight,
         "max_release_count": max_release_count,
         "safe_arrival_gap_s": safe_arrival_gap_s,
+        "near_conflict_pet_s": near_conflict_pet_s,
+        "zone_radius_m": zone_radius_m,
         "vehicle_count_seen": len(vehicle_ids),
         "throughput_arrived": len(completed_ids),
         "mean_observed_travel_time_s": sum(travel_times) / len(travel_times) if travel_times else 0.0,
@@ -245,10 +256,18 @@ def run_closed_loop_allocation(
         "stop_count_proxy": sum(1 for steps in stop_steps_by_vehicle.values() if steps * step_length >= 1.0),
         "fairness_gini_waiting": fairness_gini(waiting_values),
         "min_pairwise_ttc_proxy_s": min(min_ttc_values) if min_ttc_values else None,
+        "occupancy_count": safety["occupancy_count"],
+        "conflict_pair_count": safety["conflict_pair_count"],
+        "near_conflict_count": safety["near_conflict_count"],
+        "min_pet_s": safety["min_pet_s"],
+        "mean_pet_s": safety["mean_pet_s"],
+        "min_entry_gap_s": safety["min_entry_gap_s"],
         "state_rows": len(state_rows),
         "decision_rows": len(decision_rows),
         "states": str(state_file),
         "decisions": str(decision_file),
+        "safety_metrics": safety["metrics_file"],
+        "conflict_zone_occupancies": safety["occupancies"],
     }
     summary_file = PROTOTYPE_ROOT / "reports" / f"{output_name}_closed_loop_summary.json"
     write_json(summary_file, summary)
@@ -269,6 +288,7 @@ def main() -> None:
     parser.add_argument("--fairness-weight", type=float, default=0.15)
     parser.add_argument("--max-release-count", type=int, default=3)
     parser.add_argument("--safe-arrival-gap-s", type=float, default=1.2)
+    parser.add_argument("--near-conflict-pet-s", type=float, default=1.5)
     parser.add_argument("--gui", action="store_true")
     args = parser.parse_args()
     outputs = run_closed_loop_allocation(
@@ -284,6 +304,7 @@ def main() -> None:
         fairness_weight=args.fairness_weight,
         max_release_count=args.max_release_count,
         safe_arrival_gap_s=args.safe_arrival_gap_s,
+        near_conflict_pet_s=args.near_conflict_pet_s,
         gui=args.gui,
     )
     print(json.dumps({key: str(value) if isinstance(value, Path) else value for key, value in outputs.items()}, indent=2))

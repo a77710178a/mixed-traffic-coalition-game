@@ -99,3 +99,14 @@ python src/run_closed_loop_batch.py \
 The current closed-loop policy is a development baseline. It controls CAVs only, observes HDVs, and writes per-run summaries plus aggregate CSV files under `reports/`.
 
 `prediction_coalition` forms a small release set rather than always releasing a single vehicle. The main knobs are `--max-release-count`, `--safe-arrival-gap-s`, and `--fairness-weight`.
+
+Closed-loop runs also compute conflict-zone safety metrics:
+
+```text
+PET
+mean PET
+minimum entry-time gap
+near-conflict count
+```
+
+The current safety metric implementation uses a broad center-zone definition and should be treated as development diagnostics until movement-level conflict pairs are added.
