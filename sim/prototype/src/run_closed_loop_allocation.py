@@ -10,18 +10,9 @@ from allocation_policy import VehicleState, build_decision, estimate_arrival_tim
 from common import PROTOTYPE_ROOT, distance, ensure_dirs, load_config, run_id, write_csv, write_json
 from generate_network import generate_network
 from generate_routes import build_routes
+from priority_predictor import HeuristicPriorityPredictor, PriorityPredictor, load_priority_predictor
 from run_sumo import ensure_traci, load_route_meta, read_junction_center
 from safety_metrics import write_safety_outputs
-
-
-def _priority_probability(vehicle: VehicleState, candidates: list[VehicleState]) -> float:
-    if vehicle.veh_class.upper() != "HDV":
-        return 0.0
-    cav_etas = [estimate_arrival_time(item) for item in candidates if item.veh_class.upper() == "CAV"]
-    if not cav_etas:
-        return 0.5
-    eta_gap = min(cav_etas) - estimate_arrival_time(vehicle)
-    return 1.0 / (1.0 + math.exp(-eta_gap))
 
 
 def _safe_float(value: float) -> float:
@@ -30,7 +21,13 @@ def _safe_float(value: float) -> float:
     return float(value)
 
 
-def _candidate_states(traci, center_x: float, center_y: float, control_radius_m: float) -> list[VehicleState]:
+def _candidate_states(
+    traci,
+    center_x: float,
+    center_y: float,
+    control_radius_m: float,
+    priority_predictor: PriorityPredictor,
+) -> list[VehicleState]:
     candidates = []
     for veh_id in traci.vehicle.getIDList():
         x, y = traci.vehicle.getPosition(veh_id)
@@ -56,7 +53,7 @@ def _candidate_states(traci, center_x: float, center_y: float, control_radius_m:
                 distance_to_center=vehicle.distance_to_center,
                 speed=vehicle.speed,
                 waiting_time=vehicle.waiting_time,
-                priority_probability=_priority_probability(vehicle, candidates),
+                priority_probability=priority_predictor.predict(vehicle, candidates),
             )
         )
     return enriched
@@ -111,6 +108,7 @@ def run_closed_loop_allocation(
     max_release_count: int,
     safe_arrival_gap_s: float,
     near_conflict_pet_s: float,
+    priority_model: str | None = None,
     gui: bool = False,
 ) -> dict[str, Path | str | float | int]:
     ensure_traci()
@@ -124,6 +122,8 @@ def run_closed_loop_allocation(
     route_dir = PROTOTYPE_ROOT / "routes" / rid
     route_meta = load_route_meta(route_dir)["route_meta"]
     center_x, center_y = read_junction_center(PROTOTYPE_ROOT / "networks" / "four_leg.net.xml")
+    priority_predictor = load_priority_predictor(priority_model)
+    predictor_type = "heuristic" if isinstance(priority_predictor, HeuristicPriorityPredictor) else "logistic"
 
     output_name = f"{rid}_{method}"
     log_dir = PROTOTYPE_ROOT / "logs" / output_name
@@ -147,7 +147,7 @@ def run_closed_loop_allocation(
         while traci.simulation.getTime() <= float(duration) and traci.simulation.getMinExpectedNumber() > 0:
             traci.simulationStep()
             now = float(traci.simulation.getTime())
-            candidates = _candidate_states(traci, center_x, center_y, control_radius_m)
+            candidates = _candidate_states(traci, center_x, center_y, control_radius_m, priority_predictor)
             decision = build_decision(
                 candidates,
                 method=method,
@@ -247,6 +247,8 @@ def run_closed_loop_allocation(
         "max_release_count": max_release_count,
         "safe_arrival_gap_s": safe_arrival_gap_s,
         "near_conflict_pet_s": near_conflict_pet_s,
+        "priority_model": priority_model or "",
+        "priority_predictor_type": predictor_type,
         "zone_radius_m": zone_radius_m,
         "vehicle_count_seen": len(vehicle_ids),
         "throughput_arrived": len(completed_ids),
@@ -289,6 +291,7 @@ def main() -> None:
     parser.add_argument("--max-release-count", type=int, default=3)
     parser.add_argument("--safe-arrival-gap-s", type=float, default=1.2)
     parser.add_argument("--near-conflict-pet-s", type=float, default=1.5)
+    parser.add_argument("--priority-model", default=None)
     parser.add_argument("--gui", action="store_true")
     args = parser.parse_args()
     outputs = run_closed_loop_allocation(
@@ -305,6 +308,7 @@ def main() -> None:
         max_release_count=args.max_release_count,
         safe_arrival_gap_s=args.safe_arrival_gap_s,
         near_conflict_pet_s=args.near_conflict_pet_s,
+        priority_model=args.priority_model,
         gui=args.gui,
     )
     print(json.dumps({key: str(value) if isinstance(value, Path) else value for key, value in outputs.items()}, indent=2))

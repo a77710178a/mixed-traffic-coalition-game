@@ -100,6 +100,20 @@ The current closed-loop policy is a development baseline. It controls CAVs only,
 
 `prediction_coalition` forms a small release set rather than always releasing a single vehicle. The main knobs are `--max-release-count`, `--safe-arrival-gap-s`, and `--fairness-weight`.
 
+To use the logistic learned-priority predictor in closed loop, pass a baseline summary:
+
+```bash
+python src/run_closed_loop_batch.py \
+  --config config/stress_scenario.json \
+  --seeds 9,10 \
+  --volumes low,medium \
+  --penetrations 0.5 \
+  --methods fcfs,prediction_coalition \
+  --duration 90 \
+  --priority-model reports/baseline_seed5_train_seed6_test_h3/prediction_baseline_summary.json \
+  --output-name prototype_validation_logistic_seed9_10_low_medium_pen50_d90
+```
+
 Closed-loop runs also compute conflict-zone safety metrics:
 
 ```text
@@ -109,4 +123,4 @@ minimum entry-time gap
 near-conflict count
 ```
 
-The current safety metric implementation uses a broad center-zone definition and should be treated as development diagnostics until movement-level conflict pairs are added.
+The current safety metric implementation uses movement-level conflict-pair filtering, but the conflict zone is still represented by a simplified center radius. Treat PET outputs as development diagnostics until finer conflict zones are added.

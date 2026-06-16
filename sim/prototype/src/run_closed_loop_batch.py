@@ -30,6 +30,7 @@ SUMMARY_FIELDS = [
     "min_entry_gap_s",
     "max_release_count",
     "safe_arrival_gap_s",
+    "priority_predictor_type",
     "state_rows",
     "decision_rows",
 ]
@@ -91,6 +92,7 @@ def run_batch(
     max_release_count: int,
     safe_arrival_gap_s: float,
     near_conflict_pet_s: float,
+    priority_model: str | None,
     output_name: str,
 ) -> dict:
     ensure_dirs()
@@ -116,6 +118,7 @@ def run_batch(
                         max_release_count=max_release_count,
                         safe_arrival_gap_s=safe_arrival_gap_s,
                         near_conflict_pet_s=near_conflict_pet_s,
+                        priority_model=priority_model,
                         gui=False,
                     )
                     rows.append({field: summary.get(field) for field in SUMMARY_FIELDS})
@@ -142,6 +145,7 @@ def run_batch(
         "max_release_count": max_release_count,
         "safe_arrival_gap_s": safe_arrival_gap_s,
         "near_conflict_pet_s": near_conflict_pet_s,
+        "priority_model": priority_model or "",
         "run_count": len(rows),
         "runs_csv": str(runs_csv),
         "aggregate_csv": str(aggregate_csv),
@@ -166,6 +170,7 @@ def main() -> None:
     parser.add_argument("--max-release-count", type=int, default=3)
     parser.add_argument("--safe-arrival-gap-s", type=float, default=1.2)
     parser.add_argument("--near-conflict-pet-s", type=float, default=1.5)
+    parser.add_argument("--priority-model", default=None)
     parser.add_argument("--output-name", default="closed_loop_pilot_seed7_9_low_medium_pen50")
     args = parser.parse_args()
 
@@ -183,6 +188,7 @@ def main() -> None:
         max_release_count=args.max_release_count,
         safe_arrival_gap_s=args.safe_arrival_gap_s,
         near_conflict_pet_s=args.near_conflict_pet_s,
+        priority_model=args.priority_model,
         output_name=args.output_name,
     )
     print(json.dumps(summary, indent=2, ensure_ascii=False))

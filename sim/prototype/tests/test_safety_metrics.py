@@ -8,15 +8,16 @@ from pathlib import Path
 SRC_DIR = Path(__file__).resolve().parents[1] / "src"
 sys.path.insert(0, str(SRC_DIR))
 
-from safety_metrics import compute_conflict_safety_metrics, extract_zone_occupancies  # noqa: E402
+from safety_metrics import compute_conflict_safety_metrics, extract_zone_occupancies, movements_conflict  # noqa: E402
 
 
-def row(time: float, veh_id: str, origin: str, movement: str, distance: float) -> dict:
+def row(time: float, veh_id: str, origin: str, movement: str, distance: float, destination: str = "") -> dict:
     return {
         "time": f"{time:.1f}",
         "veh_id": veh_id,
         "veh_class": "CAV",
         "origin": origin,
+        "destination": destination,
         "movement": movement,
         "distance_to_center": f"{distance:.1f}",
     }
@@ -84,6 +85,23 @@ class SafetyMetricsTest(unittest.TestCase):
         self.assertEqual(metrics["conflict_pair_count"], 0)
         self.assertIsNone(metrics["min_pet_s"])
         self.assertEqual(metrics["near_conflict_count"], 0)
+
+    def test_movement_geometry_filters_non_intersecting_right_turns(self) -> None:
+        self.assertFalse(movements_conflict("N", "right", "W", "E", "right", "N"))
+        self.assertTrue(movements_conflict("N", "through", "S", "E", "through", "W"))
+
+    def test_non_conflicting_movement_pair_is_not_counted(self) -> None:
+        rows = [
+            row(1.0, "a", "N", "right", 10.0, destination="W"),
+            row(2.0, "a", "N", "right", 16.0, destination="W"),
+            row(1.2, "b", "E", "right", 10.0, destination="N"),
+            row(2.5, "b", "E", "right", 16.0, destination="N"),
+        ]
+
+        metrics = compute_conflict_safety_metrics(rows, zone_radius_m=14.0, near_conflict_pet_s=1.5)
+
+        self.assertEqual(metrics["conflict_pair_count"], 0)
+        self.assertIsNone(metrics["min_pet_s"])
 
     def test_empty_rows_return_zero_counts(self) -> None:
         metrics = compute_conflict_safety_metrics([], zone_radius_m=14.0, near_conflict_pet_s=1.5)
