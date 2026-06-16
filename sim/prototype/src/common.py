@@ -17,7 +17,7 @@ def load_config(path: str | Path) -> dict:
 
 
 def ensure_dirs() -> None:
-    for name in ["networks", "routes", "configs", "logs", "labels", "reports"]:
+    for name in ["networks", "routes", "configs", "logs", "labels", "datasets", "reports"]:
         (PROTOTYPE_ROOT / name).mkdir(parents=True, exist_ok=True)
 
 
@@ -85,4 +85,3 @@ def movement_to_destination(origin: str, movement: str) -> str:
     if movement == "right":
         return RIGHT[origin]
     raise ValueError(f"Unknown movement: {movement}")
-

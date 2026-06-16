@@ -29,7 +29,9 @@ python src/generate_routes.py --config config/default_scenario.json --seed 1 --v
 python src/run_sumo.py --config config/default_scenario.json --seed 1 --volume low --penetration 0.5 --duration 120
 python src/extract_conflict_events.py --config config/default_scenario.json --run-id seed1_low_pen50
 python src/generate_yield_labels.py --config config/default_scenario.json --run-id seed1_low_pen50
+python src/build_prediction_dataset.py --run-id seed1_low_pen50 --high-confidence-only
 ```
 
 Outputs are written under `logs/`, `labels/`, and `reports/`.
 
+Prediction datasets are written under `datasets/<run_id>/` as JSONL files. Each sample contains the HDV history, interacting-vehicle history, edge features, and the primary `hdv_takes_priority` label.

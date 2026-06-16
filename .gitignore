@@ -23,6 +23,7 @@ sim/prototype/networks/
 sim/prototype/routes/
 sim/prototype/logs/
 sim/prototype/labels/
+sim/prototype/datasets/
 sim/prototype/reports/
 results/
 
