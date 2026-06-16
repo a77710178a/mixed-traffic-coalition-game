@@ -24,6 +24,7 @@ sim/prototype/routes/
 sim/prototype/logs/
 sim/prototype/labels/
 sim/prototype/datasets/
+sim/prototype/graph_datasets/
 sim/prototype/reports/
 results/
 

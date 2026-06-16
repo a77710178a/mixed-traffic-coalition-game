@@ -1,6 +1,6 @@
 project:
   name: mixed-traffic-coalition-game-unsignalized-intersection
-  stage: sumo_label_sanity
+  stage: graph_attention_prediction_development
   created_at: 2026-06-16
   language: zh-CN
 
@@ -77,5 +77,6 @@ artifacts:
   prediction_baseline_results: docs/experiments/prediction_baseline_results_20260616.md
   gru_prediction_results: docs/experiments/gru_prediction_results_20260616.md
   gru_edge_prediction_results: docs/experiments/gru_edge_prediction_results_20260616.md
+  graph_attention_prediction_results: docs/experiments/graph_attention_prediction_results_20260617.md
   stress_scenario_config: sim/prototype/config/stress_scenario.json
   sumo_prototype_remote: /public/home/xiaohei_0/hx/my_paper01/sim/prototype
