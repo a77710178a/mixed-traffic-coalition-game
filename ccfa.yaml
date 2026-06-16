@@ -71,4 +71,5 @@ artifacts:
   prediction_and_allocation_design: docs/method/prediction_and_allocation_design.md
   sumo_prototype_plan: docs/experiments/sumo_prototype_plan.md
   remote_sumo_smoke_test: docs/experiments/remote_sumo_smoke_test_20260616.md
+  label_sanity_pilot: docs/experiments/label_sanity_pilot_20260616.md
   sumo_prototype_remote: /public/home/xiaohei_0/hx/my_paper01/sim/prototype
