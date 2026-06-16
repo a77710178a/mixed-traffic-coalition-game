@@ -48,3 +48,12 @@ python src/train_prediction_baselines.py \
 ```
 
 This evaluates the constant-arrival rule and a lightweight logistic-regression baseline.
+
+For the GRU-only temporal predictor, run:
+
+```bash
+python src/train_gru_predictor.py \
+  --dataset datasets/stress_seed5_6_priority_hc_h3/prediction_samples.jsonl \
+  --train-seeds 5 \
+  --test-seeds 6
+```
