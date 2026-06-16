@@ -66,3 +66,32 @@ python src/train_gru_edge_predictor.py \
   --train-seeds 5 \
   --test-seeds 6
 ```
+
+## Closed-Loop Allocation Pilot
+
+Run one closed-loop allocation method through SUMO:
+
+```bash
+python src/run_closed_loop_allocation.py \
+  --config config/stress_scenario.json \
+  --seed 7 \
+  --volume low \
+  --penetration 0.5 \
+  --duration 90 \
+  --method fcfs
+```
+
+Run a small comparison batch:
+
+```bash
+python src/run_closed_loop_batch.py \
+  --config config/stress_scenario.json \
+  --seeds 7,8 \
+  --volumes low,medium \
+  --penetrations 0.5 \
+  --methods fcfs,prediction_fcfs,prediction_coalition \
+  --duration 90 \
+  --output-name closed_loop_pilot_seed7_8_low_medium_pen50_d90
+```
+
+The current closed-loop policy is a development baseline. It controls CAVs only, observes HDVs, and writes per-run summaries plus aggregate CSV files under `reports/`.
