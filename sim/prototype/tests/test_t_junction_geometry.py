@@ -31,12 +31,12 @@ def _write_t_config(path: Path) -> None:
         "outgoing_lane_count": 1,
         "lane_width_m": 3.5,
         "turn_radius_m": 10.0,
-        "vehicle_dimensions_m": {"length": 4.8, "width": 1.9},
+        "vehicle_dimensions_m": {"length": 4.5, "width": 1.8},
         "geometry_safety_buffer_m": 0.5,
-        "control_region_distance_m": 30.0,
-        "path_sample_interval_m": 2.0,
-        "static_overlap_tolerance_m2": 0.1,
-        "geometry_mode": "lane_offset_paths",
+        "control_region_distance_m": 45.0,
+        "path_sample_interval_m": 0.25,
+        "static_overlap_tolerance_m2": 0.25,
+        "geometry_mode": "route_zones",
         "traffic_volumes_veh_per_hour_per_approach": {
             "low": 300,
             "medium": 600,
@@ -139,6 +139,11 @@ class TJunctionGeometryTest(unittest.TestCase):
                 },
             )
             self.assertIn("r_N_left__r_E_left", geometry["conflict_zones"])
+            self.assertIn("zones", geometry)
+            self.assertEqual(
+                geometry["conflict_matrix"]["r_N_through"]["r_N_left"]["conflict_type"],
+                "diverging",
+            )
 
     def test_t_junction_routes_exclude_unavailable_movements(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -210,7 +215,7 @@ class TJunctionGeometryTest(unittest.TestCase):
             self.assertIn('x1="745.0" y1="450.0" x2="450.0" y2="450.0"', svg)
             self.assertNotIn('y1="-270.0"', svg)
 
-    def test_preview_overlays_route_geometry_zones_when_artifact_exists(self) -> None:
+    def test_preview_computes_route_geometry_overlay_from_current_config(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             tmp_path = Path(tmp)
             config_path = tmp_path / "t_config.json"
@@ -236,11 +241,11 @@ class TJunctionGeometryTest(unittest.TestCase):
                         "routes": {},
                         "conflict_matrix": {},
                         "conflict_zones": {
-                            "r_N_left__r_E_left": {
-                                "route_a": "r_N_left",
-                                "route_b": "r_E_left",
-                                "center": {"x": 1.0, "y": 2.0},
-                                "radius_m": 4.0,
+                            "stale_zone": {
+                                "route_a": "stale_a",
+                                "route_b": "stale_b",
+                                "center": {"x": 80.0, "y": 80.0},
+                                "radius_m": 10.0,
                             }
                         },
                     }
@@ -253,6 +258,31 @@ class TJunctionGeometryTest(unittest.TestCase):
             svg = output_path.read_text(encoding="utf-8")
             self.assertIn("route geometry zones", svg)
             self.assertIn("r_N_left/r_E_left", svg)
+            self.assertNotIn("stale_a/stale_b", svg)
+
+    def test_preview_renders_all_six_legal_t_junction_routes(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            config_path = tmp_path / "t_config.json"
+            net_path = tmp_path / "offset.net.xml"
+            output_path = tmp_path / "preview.svg"
+            _write_t_config(config_path)
+            net_path.write_text(
+                """<?xml version="1.0" encoding="UTF-8"?>
+<net>
+  <junction id="C" x="0.00" y="0.00" type="priority" />
+  <junction id="N0" x="0.00" y="120.00" type="dead_end" />
+  <junction id="E0" x="120.00" y="0.00" type="dead_end" />
+  <junction id="S0" x="0.00" y="-120.00" type="dead_end" />
+</net>
+""",
+                encoding="utf-8",
+            )
+
+            render_preview(config_path, net_path, output_path)
+
+            svg = output_path.read_text(encoding="utf-8")
+            self.assertEqual(svg.count('class="route-example"'), 6)
 
 
 if __name__ == "__main__":

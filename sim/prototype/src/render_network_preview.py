@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 import argparse
-import json
 from pathlib import Path
 import xml.etree.ElementTree as ET
 
-from common import PROTOTYPE_ROOT, geometry_artifact_path, load_config
+from common import PROTOTYPE_ROOT, load_config
+from route_geometry import build_route_geometry
 from topology import active_approaches, route_specs
 
 
@@ -67,17 +67,15 @@ def _approach_arrow(point: tuple[float, float], center: tuple[float, float], col
 
 
 def _route_geometry_overlay(cfg: dict, canvas: int, margin: int, length: float) -> str:
-    artifact = geometry_artifact_path(cfg)
-    if not artifact.exists():
+    if not cfg.get("geometry_mode"):
         return ""
-
-    geometry = json.loads(artifact.read_text(encoding="utf-8"))
+    geometry = build_route_geometry(cfg)
     elements = []
-    for zone in geometry.get("conflict_zones", {}).values():
-        center = zone.get("center", {})
+    for zone in geometry.get("zones", []):
+        center = zone.get("centroid", {})
         x, y = _scale((float(center["x"]), float(center["y"])), (0.0, 0.0), canvas, margin, length)
         radius_px = float(zone["radius_m"]) * (canvas / 2 - margin) / length
-        label = f'{zone["route_a"]}/{zone["route_b"]}'
+        label = "/".join(zone["route_ids"])
         elements.append(
             f'<circle cx="{x:.1f}" cy="{y:.1f}" r="{radius_px:.1f}" fill="#fca5a5" stroke="#b91c1c" stroke-width="2" opacity="0.55" />'
         )
@@ -132,12 +130,12 @@ def render_preview(config_path: str | Path, net_path: str | Path, output_path: s
         "right": "#16a34a",
     }
     curves = []
-    for spec in route_specs(approaches)[:5]:
+    for spec in route_specs(approaches):
         x1, y1 = route_points[spec.origin]
         x2, y2 = route_points[spec.destination]
         cx, cy = c
         curves.append(
-            f'<path d="M{x1:.1f},{y1:.1f} Q{cx:.1f},{cy:.1f} {x2:.1f},{y2:.1f}" '
+            f'<path class="route-example" data-route-id="{spec.route_id}" d="M{x1:.1f},{y1:.1f} Q{cx:.1f},{cy:.1f} {x2:.1f},{y2:.1f}" '
             f'fill="none" stroke="{colors.get(spec.movement, "#7c3aed")}" stroke-width="2.5" stroke-dasharray="8 8" marker-end="url(#arrow)" />'
         )
 
