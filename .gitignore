@@ -17,6 +17,7 @@ venv/
 env/
 .env
 .env.*
+.worktrees/
 
 # SUMO/generated experiment outputs
 sim/prototype/networks/
