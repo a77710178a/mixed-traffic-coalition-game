@@ -162,7 +162,9 @@ Only after that should we decide whether a 300 s, 10-seed confirmatory experimen
 
 ## Remote Server Use
 
-Current screening runs were local and are now becoming slow enough that the next re-screening should move to the remote server. Use the remote server for:
+Current screening runs were local and caused noticeable laptop slowdown. From this point onward, all closed-loop batch experiments should run on the remote server. See `docs/experiments/remote_execution_policy_20260617.md`.
+
+Use the remote server for:
 
 - 300 s confirmatory runs,
 - 10-seed or larger sweeps,

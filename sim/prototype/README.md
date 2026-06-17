@@ -8,6 +8,8 @@ The prototype is intentionally small. It generates an unsignalized intersection,
 
 ## Remote Runtime
 
+Heavy SUMO batches and model training should run on the remote server, not on the local laptop. See `docs/experiments/remote_execution_policy_20260617.md` for the current remote-only policy.
+
 Use the server environment:
 
 ```bash
