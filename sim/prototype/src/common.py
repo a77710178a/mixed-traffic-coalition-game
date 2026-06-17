@@ -43,6 +43,11 @@ def scenario_run_id(cfg: dict, seed: int, volume: str, penetration: float) -> st
     return f"{_slug(scenario_name)}_{base}"
 
 
+def geometry_artifact_path(cfg: dict) -> Path:
+    scenario_name = str(cfg.get("scenario_name") or cfg.get("intersection_type") or "scenario")
+    return PROTOTYPE_ROOT / "networks" / f"{_slug(scenario_name)}_route_geometry.json"
+
+
 def write_csv(path: str | Path, rows: Iterable[dict], fieldnames: list[str]) -> None:
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)

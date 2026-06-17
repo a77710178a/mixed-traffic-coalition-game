@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 import argparse
+import json
 from pathlib import Path
 import xml.etree.ElementTree as ET
 
-from common import PROTOTYPE_ROOT, load_config
+from common import PROTOTYPE_ROOT, geometry_artifact_path, load_config
 from topology import active_approaches, route_specs
 
 
@@ -63,6 +64,37 @@ def _approach_arrow(point: tuple[float, float], center: tuple[float, float], col
         start = (cx + ux * 35.0, cy + uy * 35.0)
         end = (px - ux * 58.0, py - uy * 58.0)
     return _svg_arrow(start[0], start[1], end[0], end[1], color, 4)
+
+
+def _route_geometry_overlay(cfg: dict, canvas: int, margin: int, length: float) -> str:
+    artifact = geometry_artifact_path(cfg)
+    if not artifact.exists():
+        return ""
+
+    geometry = json.loads(artifact.read_text(encoding="utf-8"))
+    elements = []
+    for zone in geometry.get("conflict_zones", {}).values():
+        center = zone.get("center", {})
+        x, y = _scale((float(center["x"]), float(center["y"])), (0.0, 0.0), canvas, margin, length)
+        radius_px = float(zone["radius_m"]) * (canvas / 2 - margin) / length
+        label = f'{zone["route_a"]}/{zone["route_b"]}'
+        elements.append(
+            f'<circle cx="{x:.1f}" cy="{y:.1f}" r="{radius_px:.1f}" fill="#fca5a5" stroke="#b91c1c" stroke-width="2" opacity="0.55" />'
+        )
+        elements.append(
+            f'<text x="{x:.1f}" y="{y - radius_px - 4:.1f}" text-anchor="middle" font-family="Arial" font-size="10" fill="#7f1d1d">{label}</text>'
+        )
+
+    if not elements:
+        return ""
+    return "\n  ".join(
+        [
+            '<g id="route-geometry-zones">',
+            '<text x="450" y="96" text-anchor="middle" font-family="Arial" font-size="13" fill="#7f1d1d">route geometry zones</text>',
+            *elements,
+            "</g>",
+        ]
+    )
 
 
 def render_preview(config_path: str | Path, net_path: str | Path, output_path: str | Path) -> Path:
@@ -127,6 +159,7 @@ def render_preview(config_path: str | Path, net_path: str | Path, output_path: s
         f'<text x="{route_points[approach][0] + _label_offset(approach)[0]:.1f}" y="{route_points[approach][1] + _label_offset(approach)[1]:.1f}" text-anchor="middle" font-family="Arial" font-size="24" font-weight="700">{approach}</text>'
         for approach in approaches
     )
+    geometry_overlay_svg = _route_geometry_overlay(cfg, canvas, margin, length)
     title = "T-junction Unsignalized Intersection Preview" if len(approaches) == 3 else "Four-leg Unsignalized Intersection Preview"
     approach_text = ", ".join(approaches)
 
@@ -147,6 +180,7 @@ def render_preview(config_path: str | Path, net_path: str | Path, output_path: s
 
   <circle cx="{c[0]:.1f}" cy="{c[1]:.1f}" r="{radius_px:.1f}" fill="#fef3c7" stroke="#d97706" stroke-width="3" opacity="0.85" />
   <text x="{c[0]:.1f}" y="{c[1] + 5:.1f}" text-anchor="middle" font-family="Arial" font-size="14" font-weight="700" fill="#92400e">conflict zone</text>
+  {geometry_overlay_svg}
 
   {' '.join(curves)}
 

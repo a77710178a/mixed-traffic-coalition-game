@@ -12,7 +12,7 @@ from unittest.mock import patch
 SRC_DIR = Path(__file__).resolve().parents[1] / "src"
 sys.path.insert(0, str(SRC_DIR))
 
-from common import PROTOTYPE_ROOT, scenario_run_id  # noqa: E402
+from common import PROTOTYPE_ROOT, geometry_artifact_path, scenario_run_id  # noqa: E402
 from generate_network import generate_network  # noqa: E402
 from generate_routes import build_routes  # noqa: E402
 from render_network_preview import render_preview  # noqa: E402
@@ -29,6 +29,14 @@ def _write_t_config(path: Path) -> None:
         "approach_length_m": 120.0,
         "incoming_lane_count": 1,
         "outgoing_lane_count": 1,
+        "lane_width_m": 3.5,
+        "turn_radius_m": 10.0,
+        "vehicle_dimensions_m": {"length": 4.8, "width": 1.9},
+        "geometry_safety_buffer_m": 0.5,
+        "control_region_distance_m": 30.0,
+        "path_sample_interval_m": 2.0,
+        "static_overlap_tolerance_m2": 0.1,
+        "geometry_mode": "lane_offset_paths",
         "traffic_volumes_veh_per_hour_per_approach": {
             "low": 300,
             "medium": 600,
@@ -117,6 +125,20 @@ class TJunctionGeometryTest(unittest.TestCase):
                     ("S_in", "E_out"),
                 },
             )
+            self.assertEqual(outputs["route_geometry"], geometry_artifact_path(json.loads(config_path.read_text(encoding="utf-8"))))
+            geometry = json.loads(outputs["route_geometry"].read_text(encoding="utf-8"))
+            self.assertEqual(
+                set(geometry["routes"]),
+                {
+                    "r_N_left",
+                    "r_N_through",
+                    "r_E_left",
+                    "r_E_right",
+                    "r_S_through",
+                    "r_S_right",
+                },
+            )
+            self.assertIn("r_N_left__r_E_left", geometry["conflict_zones"])
 
     def test_t_junction_routes_exclude_unavailable_movements(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -187,6 +209,50 @@ class TJunctionGeometryTest(unittest.TestCase):
             self.assertIn('x1="450.0" y1="155.0" x2="450.0" y2="745.0"', svg)
             self.assertIn('x1="745.0" y1="450.0" x2="450.0" y2="450.0"', svg)
             self.assertNotIn('y1="-270.0"', svg)
+
+    def test_preview_overlays_route_geometry_zones_when_artifact_exists(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            config_path = tmp_path / "t_config.json"
+            net_path = tmp_path / "offset.net.xml"
+            output_path = tmp_path / "preview.svg"
+            _write_t_config(config_path)
+            net_path.write_text(
+                """<?xml version="1.0" encoding="UTF-8"?>
+<net>
+  <junction id="C" x="0.00" y="0.00" type="priority" />
+  <junction id="N0" x="0.00" y="120.00" type="dead_end" />
+  <junction id="E0" x="120.00" y="0.00" type="dead_end" />
+  <junction id="S0" x="0.00" y="-120.00" type="dead_end" />
+</net>
+""",
+                encoding="utf-8",
+            )
+            artifact = geometry_artifact_path(json.loads(config_path.read_text(encoding="utf-8")))
+            artifact.parent.mkdir(parents=True, exist_ok=True)
+            artifact.write_text(
+                json.dumps(
+                    {
+                        "routes": {},
+                        "conflict_matrix": {},
+                        "conflict_zones": {
+                            "r_N_left__r_E_left": {
+                                "route_a": "r_N_left",
+                                "route_b": "r_E_left",
+                                "center": {"x": 1.0, "y": 2.0},
+                                "radius_m": 4.0,
+                            }
+                        },
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            render_preview(config_path, net_path, output_path)
+
+            svg = output_path.read_text(encoding="utf-8")
+            self.assertIn("route geometry zones", svg)
+            self.assertIn("r_N_left/r_E_left", svg)
 
 
 if __name__ == "__main__":

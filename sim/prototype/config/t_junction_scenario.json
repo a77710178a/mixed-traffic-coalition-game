@@ -7,6 +7,17 @@
   "approach_length_m": 120.0,
   "incoming_lane_count": 1,
   "outgoing_lane_count": 1,
+  "lane_width_m": 3.5,
+  "turn_radius_m": 10.0,
+  "vehicle_dimensions_m": {
+    "length": 4.8,
+    "width": 1.9
+  },
+  "geometry_safety_buffer_m": 0.5,
+  "control_region_distance_m": 30.0,
+  "path_sample_interval_m": 2.0,
+  "static_overlap_tolerance_m2": 0.1,
+  "geometry_mode": "lane_offset_paths",
   "traffic_volumes_veh_per_hour_per_approach": {
     "low": 450,
     "medium": 750,

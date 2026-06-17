@@ -6,6 +6,7 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 
 from common import PROTOTYPE_ROOT, ensure_dirs, load_config
+from route_geometry import write_route_geometry
 from topology import active_approaches, connection_specs, edge_specs, node_specs
 
 
@@ -74,7 +75,10 @@ def generate_network(config_path: str) -> dict[str, Path]:
         "--no-turnarounds", "true",
     ]
     subprocess.run(cmd, check=True)
-    return {"nodes": nod, "edges": edg, "connections": con, "network": net}
+    outputs = {"nodes": nod, "edges": edg, "connections": con, "network": net}
+    if cfg.get("geometry_mode"):
+        outputs["route_geometry"] = write_route_geometry(cfg)
+    return outputs
 
 
 def main() -> None:
