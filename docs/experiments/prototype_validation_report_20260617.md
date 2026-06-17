@@ -177,3 +177,29 @@ Formal paper experiment conclusions:
 ```text
 NO-GO until expanded experiments and stronger safety/fairness evidence are available.
 ```
+
+## T-Junction Route-Zone Geometry Smoke Test
+
+Date: 2026-06-17
+
+Configuration: `sim/prototype/config/t_junction_scenario.json`
+
+Checks:
+
+- Unit tests: `37` tests passed for route geometry, route-zone events, route-zone graph neighbors, T-junction topology, safety metrics, priority predictor, and allocation policy.
+- SUMO smoke run: generated `5581` vehicle-state rows and used `geometry_mode=route_zones`.
+- Route-zone event extraction: generated `24` vehicle-zone occupancy events.
+- Yield-label generation: generated `6` labels, all high-confidence in this smoke run.
+- Closed-loop smoke run: generated `6804` state rows, `517` allocation-decision rows, and route-zone safety outputs.
+
+Observed route-zone counts:
+
+- `event_count`: 24
+- `label_count`: 6
+- `closed_loop_occupancy_count`: 10
+- `closed_loop_conflict_pair_count`: 0
+- `closed_loop_near_conflict_count`: 0
+
+Implementation note:
+
+SUMO's generated network applies a `netOffset`, so route-zone extraction now normalizes vehicle coordinates by the recorded junction center in `run_meta.json` before testing zone occupancy.

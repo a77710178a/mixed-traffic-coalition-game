@@ -7,7 +7,8 @@ from collections import defaultdict
 from pathlib import Path
 
 from allocation_policy import VehicleState, build_decision, estimate_arrival_time, fairness_gini
-from common import PROTOTYPE_ROOT, distance, ensure_dirs, load_config, scenario_run_id, write_csv, write_json
+from common import PROTOTYPE_ROOT, distance, ensure_dirs, geometry_artifact_path, load_config, scenario_run_id, write_csv, write_json
+from extract_conflict_events import extract_events
 from generate_network import generate_network
 from generate_routes import build_routes
 from priority_predictor import HeuristicPriorityPredictor, PriorityPredictor, load_priority_predictor
@@ -118,6 +119,7 @@ def run_closed_loop_allocation(
     generate_network(config_path)
     build_routes(config_path, seed, volume, penetration, duration)
     cfg = load_config(config_path)
+    geometry_path = geometry_artifact_path(cfg)
     rid = scenario_run_id(cfg, seed, volume, penetration)
     route_dir = PROTOTYPE_ROOT / "routes" / rid
     route_meta = load_route_meta(route_dir)["route_meta"]
@@ -220,12 +222,31 @@ def run_closed_loop_allocation(
         decision_rows,
         ["time", "candidate_count", "release_order", "release_vehicles", "hold_vehicles", "scores_json"],
     )
+    write_json(
+        log_dir / "run_meta.json",
+        {
+            "run_id": output_name,
+            "base_run_id": rid,
+            "seed": seed,
+            "volume": volume,
+            "penetration": penetration,
+            "duration": duration,
+            "conflict_center_x": center_x,
+            "conflict_center_y": center_y,
+            "geometry_mode": cfg.get("geometry_mode", "center_debug"),
+            "geometry_artifact": str(geometry_path) if geometry_path.exists() else "",
+            "state_rows": len(state_rows),
+        },
+    )
     zone_radius_m = float(cfg["conflict_zones"][0]["radius_m"])
+    event_outputs = extract_events(config_path, output_name, states_file=str(state_file))
     safety = write_safety_outputs(
         states_csv=state_file,
         output_dir=log_dir,
         zone_radius_m=zone_radius_m,
         near_conflict_pet_s=near_conflict_pet_s,
+        events_csv=event_outputs["events"],
+        geometry_mode=str(cfg.get("geometry_mode", "center_debug")),
     )
 
     vehicle_ids = set(first_seen) | set(last_seen)
@@ -250,6 +271,9 @@ def run_closed_loop_allocation(
         "priority_model": priority_model or "",
         "priority_predictor_type": predictor_type,
         "zone_radius_m": zone_radius_m,
+        "geometry_mode": cfg.get("geometry_mode", "center_debug"),
+        "geometry_artifact": str(geometry_path) if geometry_path.exists() else "",
+        "conflict_events": event_outputs["events"],
         "vehicle_count_seen": len(vehicle_ids),
         "throughput_arrived": len(completed_ids),
         "mean_observed_travel_time_s": sum(travel_times) / len(travel_times) if travel_times else 0.0,

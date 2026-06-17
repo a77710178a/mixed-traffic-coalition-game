@@ -12,7 +12,8 @@ from build_prediction_dataset import (
     _load_states,
     _nearest_row,
 )
-from common import PROTOTYPE_ROOT, ensure_dirs, load_config, read_csv, scenario_run_id, write_json
+from common import PROTOTYPE_ROOT, ensure_dirs, geometry_artifact_path, load_config, read_csv, scenario_run_id, write_json
+from route_geometry import load_route_geometry
 from run_label_sanity_batch import parse_csv_list
 
 
@@ -28,26 +29,48 @@ def _state_distance(row: dict) -> float:
     return _float(row, "distance_to_center")
 
 
+def _shared_conflict_zone(route_a: str, route_b: str, artifact: dict) -> str:
+    if not route_a or not route_b or route_a == route_b:
+        return ""
+    relation = artifact.get("conflict_matrix", {}).get(route_a, {}).get(route_b, {})
+    if not relation.get("conflicts"):
+        return ""
+    zone_ids = relation.get("zone_ids", [])
+    return str(zone_ids[0]) if zone_ids else ""
+
+
 def _candidate_neighbors(
     states: dict[str, dict],
     target_id: str,
     sample_time: float,
     tolerance_s: float,
     conflict_radius_m: float,
+    geometry_artifact: dict | None = None,
 ) -> list[tuple[str, dict, dict]]:
     candidates = []
     target_now = _nearest_row(states[target_id], sample_time, tolerance_s)
     if target_now is None:
         return candidates
+    target_route = str(target_now.get("route_id", ""))
     for veh_id, index in states.items():
         if veh_id == target_id:
             continue
         row = _nearest_row(index, sample_time, tolerance_s)
         if row is None:
             continue
-        if _state_distance(row) > conflict_radius_m:
-            continue
+        zone_id = ""
+        if geometry_artifact is not None:
+            zone_id = _shared_conflict_zone(target_route, str(row.get("route_id", "")), geometry_artifact)
+            if not zone_id:
+                continue
+        else:
+            if _state_distance(row) > conflict_radius_m:
+                continue
         edge = _edge_features(target_now, row)
+        if geometry_artifact is not None:
+            relation = geometry_artifact["conflict_matrix"][target_route][str(row.get("route_id", ""))]
+            edge["shared_route_zone_id"] = zone_id
+            edge["route_conflict_type"] = relation["conflict_type"]
         candidates.append((veh_id, row, edge))
     candidates.sort(key=lambda item: float(item[2]["relative_distance"]))
     return candidates
@@ -64,6 +87,7 @@ def build_graph_dataset_for_run(
     conflict_radius_m: float,
     min_neighbors: int,
     output_name: str,
+    geometry_artifact: dict | None = None,
 ) -> dict:
     ensure_dirs()
     labels_file = PROTOTYPE_ROOT / "labels" / f"{run_id_value}_yield_labels.csv"
@@ -113,6 +137,7 @@ def build_graph_dataset_for_run(
                 sample_time=sample_time,
                 tolerance_s=tolerance_s,
                 conflict_radius_m=conflict_radius_m,
+                geometry_artifact=geometry_artifact,
             )[:max_neighbors]:
                 neighbor_history = _history(states[neighbor_id], sample_time, history_s, sample_step_s, tolerance_s)
                 if neighbor_history is None:
@@ -167,6 +192,7 @@ def build_graph_dataset_for_run(
         "max_neighbors": max_neighbors,
         "conflict_radius_m": conflict_radius_m,
         "min_neighbors": min_neighbors,
+        "geometry_mode": "route_zones" if geometry_artifact is not None else "center_debug",
         "output_jsonl": str(out_jsonl),
     }
     write_json(out_dir / "graph_prediction_dataset_summary.json", summary)
@@ -192,6 +218,10 @@ def build_graph_dataset_batch(
     cfg = load_config(config_path)
     out_dir = PROTOTYPE_ROOT / "graph_datasets" / output_name
     out_dir.mkdir(parents=True, exist_ok=True)
+    geometry_artifact = None
+    artifact_path = geometry_artifact_path(cfg)
+    if cfg.get("geometry_mode") == "route_zones" and artifact_path.exists():
+        geometry_artifact = load_route_geometry(artifact_path)
     merged_jsonl = out_dir / "graph_prediction_samples.jsonl"
     summaries = []
     total_samples = 0
@@ -213,6 +243,7 @@ def build_graph_dataset_batch(
                         conflict_radius_m=conflict_radius_m,
                         min_neighbors=min_neighbors,
                         output_name=output_name,
+                        geometry_artifact=geometry_artifact,
                     )
                     summaries.append(summary)
                     with Path(summary["output_jsonl"]).open("r", encoding="utf-8") as src:

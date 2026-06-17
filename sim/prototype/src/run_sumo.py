@@ -5,7 +5,7 @@ import json
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
-from common import PROTOTYPE_ROOT, distance, ensure_dirs, load_config, scenario_run_id, write_csv, write_json
+from common import PROTOTYPE_ROOT, distance, ensure_dirs, geometry_artifact_path, load_config, scenario_run_id, write_csv, write_json
 from generate_network import generate_network
 from generate_routes import build_routes
 
@@ -37,6 +37,7 @@ def run_sumo(config_path: str, seed: int, volume: str, penetration: float, durat
     cfg = load_config(config_path)
     ensure_dirs()
     generate_network(config_path)
+    geometry_path = geometry_artifact_path(cfg)
     build_routes(config_path, seed, volume, penetration, duration)
     rid = scenario_run_id(cfg, seed, volume, penetration)
     route_dir = PROTOTYPE_ROOT / "routes" / rid
@@ -98,6 +99,8 @@ def run_sumo(config_path: str, seed: int, volume: str, penetration: float, durat
         "duration": duration,
         "conflict_center_x": center_x,
         "conflict_center_y": center_y,
+        "geometry_mode": cfg.get("geometry_mode", "center_debug"),
+        "geometry_artifact": str(geometry_path) if geometry_path.exists() else "",
         "state_rows": len(rows),
         "vehicle_count": len({row["veh_id"] for row in rows}),
     }

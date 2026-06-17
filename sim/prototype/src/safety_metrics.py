@@ -165,6 +165,39 @@ def compute_conflict_safety_metrics(
     }
 
 
+ROUTE_ZONE_CONFLICT_TYPES = {"crossing", "merging", "overlap_turning", "queue_following"}
+
+
+def compute_route_zone_safety_metrics(events: list[dict], near_conflict_pet_s: float) -> dict:
+    pets = []
+    entry_gaps = []
+    for a, b in combinations(events, 2):
+        if a.get("veh_id") == b.get("veh_id"):
+            continue
+        if a.get("zone_id") != b.get("zone_id"):
+            continue
+        conflict_type = a.get("conflict_type") or b.get("conflict_type") or ""
+        if conflict_type not in ROUTE_ZONE_CONFLICT_TYPES:
+            continue
+        entry_a = float(a["entry_time"])
+        exit_a = float(a["exit_time"])
+        entry_b = float(b["entry_time"])
+        exit_b = float(b["exit_time"])
+        first_exit, second_entry = (exit_a, entry_b) if entry_a <= entry_b else (exit_b, entry_a)
+        pets.append(second_entry - first_exit)
+        entry_gaps.append(abs(entry_a - entry_b))
+    near_conflicts = [pet for pet in pets if pet <= near_conflict_pet_s]
+    return {
+        "occupancy_count": len(events),
+        "conflict_pair_count": len(pets),
+        "near_conflict_count": len(near_conflicts),
+        "near_conflict_pet_threshold_s": near_conflict_pet_s,
+        "min_pet_s": min(pets) if pets else None,
+        "mean_pet_s": sum(pets) / len(pets) if pets else None,
+        "min_entry_gap_s": min(entry_gaps) if entry_gaps else None,
+    }
+
+
 def occupancy_rows(occupancies: list[ZoneOccupancy]) -> list[dict]:
     return [
         {
@@ -181,27 +214,66 @@ def occupancy_rows(occupancies: list[ZoneOccupancy]) -> list[dict]:
     ]
 
 
+def route_zone_occupancy_rows(events: list[dict]) -> list[dict]:
+    rows = []
+    for event in events:
+        entry_time = float(event["entry_time"])
+        exit_time = float(event["exit_time"])
+        rows.append({
+            "veh_id": event.get("veh_id", ""),
+            "veh_class": event.get("veh_class", ""),
+            "origin": event.get("origin", ""),
+            "destination": event.get("destination", ""),
+            "movement": event.get("movement", ""),
+            "route_id": event.get("route_id", ""),
+            "zone_id": event.get("zone_id", ""),
+            "conflict_type": event.get("conflict_type", ""),
+            "zone_route_ids": event.get("zone_route_ids", ""),
+            "entry_time": f"{entry_time:.2f}",
+            "exit_time": f"{exit_time:.2f}",
+            "occupancy_duration_s": f"{max(0.0, exit_time - entry_time):.2f}",
+        })
+    return rows
+
+
 def write_safety_outputs(
     states_csv: str | Path,
     output_dir: str | Path,
     zone_radius_m: float,
     near_conflict_pet_s: float,
+    events_csv: str | Path | None = None,
+    geometry_mode: str = "center_debug",
 ) -> dict:
     rows = read_csv(states_csv)
-    occupancies = extract_zone_occupancies(rows, zone_radius_m=zone_radius_m)
-    metrics = compute_conflict_safety_metrics(
-        rows,
-        zone_radius_m=zone_radius_m,
-        near_conflict_pet_s=near_conflict_pet_s,
-    )
+    if geometry_mode == "route_zones" and events_csv is not None:
+        events = read_csv(events_csv)
+        output_rows = route_zone_occupancy_rows(events)
+        metrics = compute_route_zone_safety_metrics(events, near_conflict_pet_s=near_conflict_pet_s)
+        occupancy_file_name = "route_zone_occupancies.csv"
+        occupancy_headers = [
+            "veh_id", "veh_class", "origin", "destination", "movement", "route_id", "zone_id",
+            "conflict_type", "zone_route_ids", "entry_time", "exit_time", "occupancy_duration_s",
+        ]
+    else:
+        occupancies = extract_zone_occupancies(rows, zone_radius_m=zone_radius_m)
+        output_rows = occupancy_rows(occupancies)
+        metrics = compute_conflict_safety_metrics(
+            rows,
+            zone_radius_m=zone_radius_m,
+            near_conflict_pet_s=near_conflict_pet_s,
+        )
+        occupancy_file_name = "conflict_zone_occupancies.csv"
+        occupancy_headers = [
+            "veh_id", "veh_class", "origin", "destination", "movement", "entry_time", "exit_time", "occupancy_duration_s",
+        ]
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
-    occupancy_file = output_dir / "conflict_zone_occupancies.csv"
+    occupancy_file = output_dir / occupancy_file_name
     metrics_file = output_dir / "safety_metrics.json"
     write_csv(
         occupancy_file,
-        occupancy_rows(occupancies),
-        ["veh_id", "veh_class", "origin", "destination", "movement", "entry_time", "exit_time", "occupancy_duration_s"],
+        output_rows,
+        occupancy_headers,
     )
     write_json(metrics_file, metrics)
     return {"occupancies": str(occupancy_file), "metrics_file": str(metrics_file), **metrics}
@@ -213,12 +285,16 @@ def main() -> None:
     parser.add_argument("--output-dir", default=str(PROTOTYPE_ROOT / "reports" / "safety_metrics"))
     parser.add_argument("--zone-radius-m", type=float, default=14.0)
     parser.add_argument("--near-conflict-pet-s", type=float, default=1.5)
+    parser.add_argument("--events-csv", default=None)
+    parser.add_argument("--geometry-mode", default="center_debug")
     args = parser.parse_args()
     outputs = write_safety_outputs(
         states_csv=args.states_csv,
         output_dir=args.output_dir,
         zone_radius_m=args.zone_radius_m,
         near_conflict_pet_s=args.near_conflict_pet_s,
+        events_csv=args.events_csv,
+        geometry_mode=args.geometry_mode,
     )
     for key, value in outputs.items():
         print(f"{key}: {value}")

@@ -6,6 +6,9 @@ from itertools import combinations
 from common import PROTOTYPE_ROOT, ensure_dirs, load_config, read_csv, write_csv, write_json
 
 
+PRIORITY_LABEL_CONFLICT_TYPES = {"crossing", "merging", "overlap_turning"}
+
+
 def generate_labels(config_path: str, run_id_value: str) -> dict:
     cfg = load_config(config_path)
     ensure_dirs()
@@ -22,7 +25,14 @@ def generate_labels(config_path: str, run_id_value: str) -> dict:
     for a, b in combinations(events, 2):
         if a["zone_id"] != b["zone_id"]:
             continue
-        if a["origin"] == b["origin"]:
+        route_ids = {item for item in str(a.get("zone_route_ids", "")).split("|") if item}
+        conflict_type = a.get("conflict_type") or b.get("conflict_type") or ""
+        if route_ids:
+            if conflict_type not in PRIORITY_LABEL_CONFLICT_TYPES:
+                continue
+            if a["route_id"] not in route_ids or b["route_id"] not in route_ids:
+                continue
+        elif a["origin"] == b["origin"]:
             continue
         entry_a = float(a["entry_time"])
         entry_b = float(b["entry_time"])

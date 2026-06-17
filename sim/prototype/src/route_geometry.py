@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import math
 from pathlib import Path
 
@@ -394,3 +395,7 @@ def write_route_geometry(cfg: dict, path: str | Path | None = None) -> Path:
     output_path = Path(path) if path is not None else geometry_artifact_path(cfg)
     write_json(output_path, build_route_geometry(cfg))
     return output_path
+
+
+def load_route_geometry(path: str | Path) -> dict:
+    return json.loads(Path(path).read_text(encoding="utf-8"))
