@@ -16,9 +16,11 @@ This summary consolidates completed screening experiments. It does not make fina
 | A2 | 30 | Coalition size ablation | `docs/experiments/formal_a2_coalition_size_ablation_report_20260617.md` |
 | A3 | 30 | Safe arrival gap ablation | `docs/experiments/formal_a3_safe_gap_ablation_report_20260617.md` |
 | J1 | 80 | Joint tuning sweep | `docs/experiments/formal_j1_joint_tuning_report_20260617.md` |
-| Total | 360 | Screening and mechanism diagnosis | this summary |
+| R1 | 90 | Selected-candidate re-screening | `docs/experiments/formal_rescreen_selected_candidate_report_20260618.md` |
+| S1-S4 | 180 | Safety-constrained candidate screen | `docs/experiments/formal_safety_constrained_candidate_screen_report_20260618.md` |
+| Total | 630 | Screening and mechanism diagnosis | this summary |
 
-All runs above were executed locally in the Codex workspace, not on the remote server.
+Runs through J1 were executed locally in the Codex workspace. R1 and S1-S4 were executed on the remote server under the remote-only policy for heavy simulations.
 
 ## What We Know
 
@@ -127,9 +129,9 @@ mean PET: 48.78 s vs 47.58 s
 waiting Gini: 0.5554 vs 0.5499
 ```
 
-## Next Required Re-Screening
+## Completed Selected-Candidate Re-Screening
 
-Before confirmatory 300 s runs, run an E2-style re-screening with the selected candidate:
+The E2-style re-screening with the selected candidate has been completed on the remote server:
 
 ```text
 seeds = 1..5
@@ -140,25 +142,50 @@ methods = fcfs, selected coalition
 selected coalition = max_release_count 3, safe_arrival_gap_s 0.8, fairness_weight 0.3
 ```
 
-Command:
+The selected candidate reduced mean observed travel time from 57.40 s to 54.80 s and improved average throughput from 12.20 to 12.56 vehicles/run, but it worsened waiting Gini, conflict-pair count, near-conflict count, and PET in the aggregate table.
 
-```powershell
-python sim/prototype/src/run_closed_loop_batch.py `
-  --config sim/prototype/config/t_junction_scenario.json `
-  --seeds 1,2,3,4,5 `
-  --volumes low,medium,high `
-  --penetrations 0.2,0.5,0.8 `
-  --methods fcfs,prediction_coalition `
-  --duration 120 `
-  --control-radius-m 45 `
-  --fairness-weight 0.3 `
-  --max-release-count 3 `
-  --safe-arrival-gap-s 0.8 `
-  --near-conflict-pet-s 1.5 `
-  --output-name formal_rescreen_selected_mr3_gap08_fw03_seed1_5_lmh_pen20_50_80_d120
+This result did not justify a final 300 s confirmatory run with the exact selected candidate. The follow-up safety-constrained candidate screen tested four less aggressive or more regularized coalition variants while reusing the completed FCFS reference.
+
+## Current Balanced Candidate
+
+The safety-constrained screen promotes S3 as the current balanced confirmatory candidate:
+
+```text
+max_release_count = 2
+safe_arrival_gap_s = 1.2
+fairness_weight = 0.15
 ```
 
-Only after that should we decide whether a 300 s, 10-seed confirmatory experiment is justified.
+Compared with the same 45-run FCFS reference, S3 produced:
+
+```text
+throughput: 12.04 vs 12.20
+mean travel time: 56.26 s vs 57.40 s
+near-conflict count: 0.36 vs 0.33
+min PET: 13.48 s vs 13.40 s
+mean PET: 42.95 s vs 41.92 s
+waiting Gini: 0.6048 vs 0.5994
+```
+
+S3 is not a safety-superiority result, but it is a better balanced confirmatory candidate than the original R1 setting because it recovers PET while preserving a modest travel-time benefit.
+
+S2 remains the conservative backup:
+
+```text
+max_release_count = 2
+safe_arrival_gap_s = 1.2
+fairness_weight = 0.3
+```
+
+Next, run a smaller 300 s pilot before full confirmatory experiments:
+
+```text
+methods = fcfs, S3
+seeds = 1,2,3
+volumes = medium, high
+penetrations = 0.5, 0.8
+duration = 300 s
+```
 
 ## Remote Server Use
 
