@@ -18,9 +18,10 @@ This summary consolidates completed screening experiments. It does not make fina
 | J1 | 80 | Joint tuning sweep | `docs/experiments/formal_j1_joint_tuning_report_20260617.md` |
 | R1 | 90 | Selected-candidate re-screening | `docs/experiments/formal_rescreen_selected_candidate_report_20260618.md` |
 | S1-S4 | 180 | Safety-constrained candidate screen | `docs/experiments/formal_safety_constrained_candidate_screen_report_20260618.md` |
-| Total | 630 | Screening and mechanism diagnosis | this summary |
+| P1 | 24 | S3 300 s pilot | `docs/experiments/formal_pilot_s3_300s_report_20260618.md` |
+| Total | 654 | Screening and mechanism diagnosis | this summary |
 
-Runs through J1 were executed locally in the Codex workspace. R1 and S1-S4 were executed on the remote server under the remote-only policy for heavy simulations.
+Runs through J1 were executed locally in the Codex workspace. R1, S1-S4, and P1 were executed on the remote server under the remote-only policy for heavy simulations.
 
 ## What We Know
 
@@ -177,7 +178,7 @@ safe_arrival_gap_s = 1.2
 fairness_weight = 0.3
 ```
 
-Next, run a smaller 300 s pilot before full confirmatory experiments:
+The 300 s pilot has now been completed:
 
 ```text
 methods = fcfs, S3
@@ -186,6 +187,21 @@ volumes = medium, high
 penetrations = 0.5, 0.8
 duration = 300 s
 ```
+
+P1 result:
+
+```text
+throughput: 30.25 vs 31.42
+mean travel time: 158.62 s vs 158.33 s
+near-conflict count: 0.42 vs 0.50
+min PET: 3.41 s vs 3.34 s
+mean PET: 92.41 s vs 89.77 s
+waiting Gini: 0.6269 vs 0.6279
+```
+
+This pilot does not support S3 as an efficiency-improving final default under longer simulation. It supports S3 as a safety-leaning conservative variant: near conflicts, mean PET, min PET, and waiting Gini improve slightly, but throughput and travel time do not.
+
+Do not run the full 300 s, 10-seed confirmatory experiment yet. The next method step should adjust the release rule, likely by keeping the safer `max_release_count=2` / `safe_arrival_gap_s=1.2` structure while adding a throughput-preserving tie-breaker or reducing fairness regularization.
 
 ## Remote Server Use
 
