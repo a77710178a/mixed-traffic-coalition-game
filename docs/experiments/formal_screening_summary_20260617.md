@@ -93,7 +93,7 @@ Based on completed screening:
 
 ## Next Required Sweep
 
-Before any 300 s confirmatory runs, run a compact joint tuning sweep:
+Before any 300 s confirmatory runs, run the compact joint tuning sweep now represented as queue group `J1`:
 
 ```text
 max_release_count in {2, 3}

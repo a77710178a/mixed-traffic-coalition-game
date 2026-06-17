@@ -41,8 +41,41 @@ class FormalExperimentQueueTest(unittest.TestCase):
                 "A3_safe_gap_0_8",
                 "A3_safe_gap_1_2",
                 "A3_safe_gap_1_6",
+                "J1_mr2_gap0_8_fw0_15",
+                "J1_mr2_gap0_8_fw0_3",
+                "J1_mr2_gap1_2_fw0_15",
+                "J1_mr2_gap1_2_fw0_3",
+                "J1_mr3_gap0_8_fw0_15",
+                "J1_mr3_gap0_8_fw0_3",
+                "J1_mr3_gap1_2_fw0_15",
+                "J1_mr3_gap1_2_fw0_3",
             ],
         )
+
+    def test_build_default_queue_contains_joint_tuning_jobs(self) -> None:
+        from run_formal_experiment_queue import build_default_jobs
+
+        jobs = [job for job in build_default_jobs(config_path="cfg.json") if job.group == "J1"]
+        job_ids = [job.job_id for job in jobs]
+
+        self.assertEqual(
+            job_ids,
+            [
+                "J1_mr2_gap0_8_fw0_15",
+                "J1_mr2_gap0_8_fw0_3",
+                "J1_mr2_gap1_2_fw0_15",
+                "J1_mr2_gap1_2_fw0_3",
+                "J1_mr3_gap0_8_fw0_15",
+                "J1_mr3_gap0_8_fw0_3",
+                "J1_mr3_gap1_2_fw0_15",
+                "J1_mr3_gap1_2_fw0_3",
+            ],
+        )
+        self.assertEqual(jobs[0].params["max_release_count"], 2)
+        self.assertEqual(jobs[0].params["safe_arrival_gap_s"], 0.8)
+        self.assertEqual(jobs[0].params["fairness_weight"], 0.15)
+        self.assertEqual(jobs[0].params["volumes"], ["medium", "high"])
+        self.assertEqual(jobs[0].params["penetrations"], [0.5])
 
     def test_write_manifest_records_commands_without_results(self) -> None:
         from run_formal_experiment_queue import build_default_jobs, write_manifest

@@ -21,6 +21,10 @@ def _csv(values: list) -> str:
     return ",".join(str(value) for value in values)
 
 
+def _token(value: float | int) -> str:
+    return str(value).replace(".", "_")
+
+
 def _command(job: ExperimentJob) -> str:
     params = job.params
     if job.backend == "label_sanity":
@@ -279,11 +283,11 @@ def build_default_jobs(config_path: str) -> list[ExperimentJob]:
         )
 
     for value in [0.8, 1.2, 1.6]:
-        token = str(value).replace(".", "_")
-        output_name = f"ablation_a3_safe_gap_{token}_tj_seed1_5_mh_pen50_d120"
+        value_token = _token(value)
+        output_name = f"ablation_a3_safe_gap_{value_token}_tj_seed1_5_mh_pen50_d120"
         jobs.append(
             ExperimentJob(
-                job_id=f"A3_safe_gap_{token}",
+                job_id=f"A3_safe_gap_{value_token}",
                 group="A3",
                 backend="closed_loop",
                 output_name=output_name,
@@ -298,6 +302,34 @@ def build_default_jobs(config_path: str) -> list[ExperimentJob]:
                 ),
             )
         )
+    for max_release_count in [2, 3]:
+        for safe_arrival_gap_s in [0.8, 1.2]:
+            for fairness_weight in [0.15, 0.3]:
+                gap_token = _token(safe_arrival_gap_s)
+                fairness_token = _token(fairness_weight)
+                output_name = (
+                    f"joint_j1_mr{max_release_count}_gap{gap_token}_fw{fairness_token}"
+                    "_tj_seed1_5_mh_pen50_d120"
+                )
+                jobs.append(
+                    ExperimentJob(
+                        job_id=f"J1_mr{max_release_count}_gap{gap_token}_fw{fairness_token}",
+                        group="J1",
+                        backend="closed_loop",
+                        output_name=output_name,
+                        params=_closed_loop_params(
+                            config_path=config_path,
+                            output_name=output_name,
+                            seeds=[1, 2, 3, 4, 5],
+                            volumes=["medium", "high"],
+                            penetrations=[0.5],
+                            methods=["prediction_coalition"],
+                            fairness_weight=fairness_weight,
+                            max_release_count=max_release_count,
+                            safe_arrival_gap_s=safe_arrival_gap_s,
+                        ),
+                    )
+                )
     return jobs
 
 
