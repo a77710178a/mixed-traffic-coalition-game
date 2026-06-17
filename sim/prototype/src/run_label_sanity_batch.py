@@ -20,6 +20,15 @@ def load_json(path: Path) -> dict:
         return json.load(f)
 
 
+def label_batch_output_paths(output_name: str | None = None) -> dict[str, Path]:
+    prefix = f"{output_name}_" if output_name else ""
+    report_dir = PROTOTYPE_ROOT / "reports"
+    return {
+        "summary_csv": report_dir / f"{prefix}label_sanity_batch_summary.csv",
+        "summary_json": report_dir / f"{prefix}label_sanity_batch_summary.json",
+    }
+
+
 def run_batch(
     config_path: str,
     seeds: list[int],
@@ -27,6 +36,7 @@ def run_batch(
     penetrations: list[float],
     duration: float,
     max_runs: int | None = None,
+    output_name: str | None = None,
 ) -> dict:
     ensure_dirs()
     cfg = load_config(config_path)
@@ -69,8 +79,8 @@ def run_batch(
         if max_runs is not None and run_counter >= max_runs:
             break
 
-    report_dir = PROTOTYPE_ROOT / "reports"
-    out_csv = report_dir / "label_sanity_batch_summary.csv"
+    output_paths = label_batch_output_paths(output_name)
+    out_csv = output_paths["summary_csv"]
     fields = [
         "run_id", "seed", "volume", "penetration", "duration", "vehicle_count", "state_rows",
         "event_count", "hdv_event_count", "cav_event_count", "label_count",
@@ -97,7 +107,7 @@ def run_batch(
     totals["hdv_takes_priority_ratio"] = (
         totals["hdv_takes_priority_count"] / totals["label_count"] if totals["label_count"] else 0.0
     )
-    out_json = report_dir / "label_sanity_batch_summary.json"
+    out_json = output_paths["summary_json"]
     write_json(out_json, {"totals": totals, "runs": rows})
     return {"summary_csv": str(out_csv), "summary_json": str(out_json), "totals": totals}
 
@@ -110,6 +120,7 @@ def main() -> None:
     parser.add_argument("--penetrations", default="0.5")
     parser.add_argument("--duration", type=float, default=120.0)
     parser.add_argument("--max-runs", type=int, default=None)
+    parser.add_argument("--output-name", default=None)
     args = parser.parse_args()
     result = run_batch(
         config_path=args.config,
@@ -118,6 +129,7 @@ def main() -> None:
         penetrations=parse_csv_list(args.penetrations, float),
         duration=args.duration,
         max_runs=args.max_runs,
+        output_name=args.output_name,
     )
     print(json.dumps(result, indent=2, ensure_ascii=False))
 
