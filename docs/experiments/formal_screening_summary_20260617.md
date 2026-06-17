@@ -15,7 +15,8 @@ This summary consolidates completed screening experiments. It does not make fina
 | A1 | 40 | Fairness weight ablation | `docs/experiments/formal_a1_fairness_ablation_report_20260617.md` |
 | A2 | 30 | Coalition size ablation | `docs/experiments/formal_a2_coalition_size_ablation_report_20260617.md` |
 | A3 | 30 | Safe arrival gap ablation | `docs/experiments/formal_a3_safe_gap_ablation_report_20260617.md` |
-| Total | 280 | Screening and mechanism diagnosis | this summary |
+| J1 | 80 | Joint tuning sweep | `docs/experiments/formal_j1_joint_tuning_report_20260617.md` |
+| Total | 360 | Screening and mechanism diagnosis | this summary |
 
 All runs above were executed locally in the Codex workspace, not on the remote server.
 
@@ -83,17 +84,17 @@ Route-zone coalition allocation can produce an efficiency gain in a T-junction m
 
 ## Current Best Candidate Settings
 
-Based on completed screening:
+Based on completed screening and the completed J1 joint tuning sweep:
 
 | Candidate | Why |
 | --- | --- |
-| `max_release_count=2`, `safe_arrival_gap_s=1.2`, `fairness_weight=0.15` | Balanced A2 candidate with stronger PET than release count 3 |
-| `max_release_count=3`, `safe_arrival_gap_s=0.8`, `fairness_weight=0.15` | Strong A3 efficiency/PET candidate, but high-demand near-conflict needs checking |
-| `max_release_count=3`, `safe_arrival_gap_s=1.2`, `fairness_weight=0.3` | A1 safety-regularized candidate with fewer near-conflicts but weaker efficiency |
+| `max_release_count=3`, `safe_arrival_gap_s=0.8`, `fairness_weight=0.3` | Selected J1 candidate: near-conflict count matches matched FCFS, PET is slightly higher than matched FCFS, and throughput/travel time improve |
+| `max_release_count=2`, `safe_arrival_gap_s=1.2`, `fairness_weight=0.15` | Conservative fallback with strong PET but weaker throughput |
+| `max_release_count=3`, `safe_arrival_gap_s=0.8`, `fairness_weight=0.15` | Higher-throughput candidate rejected for now because near-conflict count increases |
 
-## Next Required Sweep
+## Completed Joint Sweep
 
-Before any 300 s confirmatory runs, run the compact joint tuning sweep now represented as queue group `J1`:
+The compact joint tuning sweep was run as queue group `J1`:
 
 ```text
 max_release_count in {2, 3}
@@ -105,16 +106,30 @@ seeds = 1..5
 duration = 120 s
 ```
 
-This is 8 settings x 10 runs = 80 runs.
+This was 8 settings x 10 runs = 80 runs.
 
-Primary selection rule:
+J1 selected:
 
-1. Near-conflict count should be no worse than matched FCFS by more than a small tolerance.
-2. Mean PET should be close to matched FCFS.
-3. Throughput should improve over matched FCFS.
-4. Waiting Gini should not degrade substantially.
+```text
+max_release_count = 3
+safe_arrival_gap_s = 0.8
+fairness_weight = 0.3
+```
 
-After selecting one candidate, rerun E2-style main screening with the selected parameters across:
+Matched against the FCFS subset, the selected candidate produced:
+
+```text
+throughput: 10.50 vs 10.10
+mean travel time: 64.59 s vs 67.91 s
+near-conflict count: 0.20 vs 0.20
+min PET: 22.69 s vs 21.24 s
+mean PET: 48.78 s vs 47.58 s
+waiting Gini: 0.5554 vs 0.5499
+```
+
+## Next Required Re-Screening
+
+Before confirmatory 300 s runs, run an E2-style re-screening with the selected candidate:
 
 ```text
 seeds = 1..5
@@ -122,13 +137,32 @@ volumes = low, medium, high
 penetrations = 0.2, 0.5, 0.8
 duration = 120 s
 methods = fcfs, selected coalition
+selected coalition = max_release_count 3, safe_arrival_gap_s 0.8, fairness_weight 0.3
+```
+
+Command:
+
+```powershell
+python sim/prototype/src/run_closed_loop_batch.py `
+  --config sim/prototype/config/t_junction_scenario.json `
+  --seeds 1,2,3,4,5 `
+  --volumes low,medium,high `
+  --penetrations 0.2,0.5,0.8 `
+  --methods fcfs,prediction_coalition `
+  --duration 120 `
+  --control-radius-m 45 `
+  --fairness-weight 0.3 `
+  --max-release-count 3 `
+  --safe-arrival-gap-s 0.8 `
+  --near-conflict-pet-s 1.5 `
+  --output-name formal_rescreen_selected_mr3_gap08_fw03_seed1_5_lmh_pen20_50_80_d120
 ```
 
 Only after that should we decide whether a 300 s, 10-seed confirmatory experiment is justified.
 
 ## Remote Server Use
 
-Current screening runs were local. Use the remote server for:
+Current screening runs were local and are now becoming slow enough that the next re-screening should move to the remote server. Use the remote server for:
 
 - 300 s confirmatory runs,
 - 10-seed or larger sweeps,
