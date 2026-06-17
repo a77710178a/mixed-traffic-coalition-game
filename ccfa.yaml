@@ -53,7 +53,7 @@ evidence:
     - coalition_without_fairness_allocation
 
 open_questions:
-  - Which specific unsignalized intersection geometry should be used first?
+  - How fine should the T-junction conflict-zone decomposition be for the formal experiments?
   - Should the HDV prediction module use LSTM, GRU, GNN, Transformer, or a lightweight hybrid model?
   - Should the HDV uncertainty model be calibrated from public trajectory data or simulated behavior classes?
   - Should the paper emphasize theoretical stability, simulation performance, or deployment realism?
@@ -83,4 +83,5 @@ artifacts:
   safety_metrics_pilot: docs/experiments/safety_metrics_pilot_20260617.md
   prototype_validation_report: docs/experiments/prototype_validation_report_20260617.md
   stress_scenario_config: sim/prototype/config/stress_scenario.json
+  t_junction_scenario_config: sim/prototype/config/t_junction_scenario.json
   sumo_prototype_remote: /public/home/xiaohei_0/hx/my_paper01/sim/prototype

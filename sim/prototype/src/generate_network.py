@@ -5,7 +5,8 @@ import subprocess
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
-from common import APPROACHES, PROTOTYPE_ROOT, ensure_dirs, load_config
+from common import PROTOTYPE_ROOT, ensure_dirs, load_config
+from topology import active_approaches, connection_specs, edge_specs, node_specs
 
 
 def _indent(tree: ET.ElementTree) -> None:
@@ -28,22 +29,15 @@ def generate_network(config_path: str) -> dict[str, Path]:
     network_dir = PROTOTYPE_ROOT / "networks"
     length = float(cfg["approach_length_m"])
     speed = float(cfg["speed_limit_mps"])
+    approaches = active_approaches(cfg)
 
     nodes = ET.Element("nodes")
-    ET.SubElement(nodes, "node", id="C", x="0.0", y="0.0", type="priority")
-    ET.SubElement(nodes, "node", id="N0", x="0.0", y=str(length), type="dead_end")
-    ET.SubElement(nodes, "node", id="E0", x=str(length), y="0.0", type="dead_end")
-    ET.SubElement(nodes, "node", id="S0", x="0.0", y=str(-length), type="dead_end")
-    ET.SubElement(nodes, "node", id="W0", x=str(-length), y="0.0", type="dead_end")
+    for node_id, x, y in node_specs(approaches, length):
+        node_type = "priority" if node_id == "C" else "dead_end"
+        ET.SubElement(nodes, "node", id=node_id, x=str(x), y=str(y), type=node_type)
 
     edges = ET.Element("edges")
-    edge_specs = [
-        ("N_in", "N0", "C"), ("N_out", "C", "N0"),
-        ("E_in", "E0", "C"), ("E_out", "C", "E0"),
-        ("S_in", "S0", "C"), ("S_out", "C", "S0"),
-        ("W_in", "W0", "C"), ("W_out", "C", "W0"),
-    ]
-    for edge_id, from_node, to_node in edge_specs:
+    for edge_id, from_node, to_node in edge_specs(approaches):
         ET.SubElement(
             edges,
             "edge",
@@ -57,11 +51,8 @@ def generate_network(config_path: str) -> dict[str, Path]:
         edge.attrib["from"] = edge.attrib.pop("from_")
 
     connections = ET.Element("connections")
-    for origin, mapping in APPROACHES.items():
-        for dest, dest_mapping in APPROACHES.items():
-            if dest == origin:
-                continue
-            ET.SubElement(connections, "connection", from_=mapping["in"], to=dest_mapping["out"])
+    for from_edge, to_edge in connection_specs(approaches):
+        ET.SubElement(connections, "connection", from_=from_edge, to=to_edge)
     for conn in connections:
         conn.attrib["from"] = conn.attrib.pop("from_")
 
@@ -97,4 +88,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

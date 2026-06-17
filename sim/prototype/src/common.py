@@ -4,6 +4,7 @@ import csv
 import json
 import math
 import random
+import re
 from pathlib import Path
 from typing import Iterable
 
@@ -24,6 +25,22 @@ def ensure_dirs() -> None:
 def run_id(seed: int, volume: str, penetration: float) -> str:
     pen = int(round(float(penetration) * 100))
     return f"seed{seed}_{volume}_pen{pen}"
+
+
+def _slug(value: str) -> str:
+    slug = re.sub(r"[^A-Za-z0-9]+", "_", value.strip()).strip("_").lower()
+    return slug or "scenario"
+
+
+def scenario_run_id(cfg: dict, seed: int, volume: str, penetration: float) -> str:
+    base = run_id(seed, volume, penetration)
+    intersection_type = str(cfg.get("intersection_type", "four_leg")).lower()
+    active_approaches = {str(item).upper() for item in cfg.get("active_approaches", [])}
+    is_four_leg_approaches = not active_approaches or active_approaches == {"N", "E", "S", "W"}
+    if intersection_type in {"four_leg", "four-leg", "cross", "x"} and is_four_leg_approaches:
+        return base
+    scenario_name = str(cfg.get("scenario_name") or intersection_type)
+    return f"{_slug(scenario_name)}_{base}"
 
 
 def write_csv(path: str | Path, rows: Iterable[dict], fieldnames: list[str]) -> None:

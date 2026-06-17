@@ -6,25 +6,26 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 
 from common import (
-    APPROACHES,
     PROTOTYPE_ROOT,
     ensure_dirs,
     load_config,
-    movement_to_destination,
-    run_id,
+    scenario_run_id,
     weighted_choice,
     write_json,
 )
 from generate_network import write_xml
+from topology import active_approaches, allowed_turn_weights, route_specs
 
 
 def build_routes(config_path: str, seed: int, volume: str, penetration: float, duration: float) -> dict[str, Path]:
     cfg = load_config(config_path)
     ensure_dirs()
     rng = random.Random(seed)
-    rid = run_id(seed, volume, penetration)
+    rid = scenario_run_id(cfg, seed, volume, penetration)
     route_dir = PROTOTYPE_ROOT / "routes" / rid
     route_dir.mkdir(parents=True, exist_ok=True)
+    approaches = active_approaches(cfg)
+    specs = route_specs(approaches)
 
     root = ET.Element("routes")
     ET.SubElement(root, "vType", id="CAV", vClass="passenger", color="0,180,255", accel="2.6", decel="4.0", tau="0.8", minGap="2.0", sigma="0.1")
@@ -43,25 +44,29 @@ def build_routes(config_path: str, seed: int, volume: str, penetration: float, d
         )
 
     route_meta: dict[str, dict] = {}
-    for origin, mapping in APPROACHES.items():
-        for movement in ["left", "through", "right"]:
-            dest = movement_to_destination(origin, movement)
-            route_id = f"r_{origin}_{movement}"
-            edges = f"{mapping['in']} {APPROACHES[dest]['out']}"
-            ET.SubElement(root, "route", id=route_id, edges=edges)
-            route_meta[route_id] = {"origin": origin, "destination": dest, "movement": movement}
+    for spec in specs:
+        ET.SubElement(root, "route", id=spec.route_id, edges=spec.edges)
+        route_meta[spec.route_id] = {
+            "origin": spec.origin,
+            "destination": spec.destination,
+            "movement": spec.movement,
+        }
 
     demand_per_approach = float(cfg["traffic_volumes_veh_per_hour_per_approach"][volume])
-    expected_total = demand_per_approach * 4.0 * duration / 3600.0
+    expected_total = demand_per_approach * len(approaches) * duration / 3600.0
     vehicle_count = max(1, int(round(expected_total)))
     turn_weights = cfg["turning_ratio"]
     hdv_mix = cfg["hdv_behavior_mix"]
+    turn_weights_by_origin = {
+        origin: allowed_turn_weights(origin, approaches, turn_weights)
+        for origin in approaches
+    }
 
     vehicles = []
     for index in range(vehicle_count):
         depart = rng.random() * float(duration)
-        origin = rng.choice(list(APPROACHES.keys()))
-        movement = weighted_choice(rng, turn_weights)
+        origin = rng.choice(list(approaches))
+        movement = weighted_choice(rng, turn_weights_by_origin[origin])
         route = f"r_{origin}_{movement}"
         is_cav = rng.random() < float(penetration)
         if is_cav:
@@ -104,6 +109,7 @@ def build_routes(config_path: str, seed: int, volume: str, penetration: float, d
 
     meta = {
         "run_id": rid,
+        "active_approaches": list(approaches),
         "seed": seed,
         "volume": volume,
         "penetration": penetration,

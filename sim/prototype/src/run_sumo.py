@@ -5,7 +5,7 @@ import json
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
-from common import PROTOTYPE_ROOT, distance, ensure_dirs, load_config, run_id, write_csv, write_json
+from common import PROTOTYPE_ROOT, distance, ensure_dirs, load_config, scenario_run_id, write_csv, write_json
 from generate_network import generate_network
 from generate_routes import build_routes
 
@@ -38,7 +38,7 @@ def run_sumo(config_path: str, seed: int, volume: str, penetration: float, durat
     ensure_dirs()
     generate_network(config_path)
     build_routes(config_path, seed, volume, penetration, duration)
-    rid = run_id(seed, volume, penetration)
+    rid = scenario_run_id(cfg, seed, volume, penetration)
     route_dir = PROTOTYPE_ROOT / "routes" / rid
     meta = load_route_meta(route_dir)
 

@@ -5,7 +5,7 @@ import csv
 import json
 from pathlib import Path
 
-from common import PROTOTYPE_ROOT, ensure_dirs, run_id, write_csv, write_json
+from common import PROTOTYPE_ROOT, ensure_dirs, load_config, scenario_run_id, write_csv, write_json
 from extract_conflict_events import extract_events
 from generate_yield_labels import generate_labels
 from run_sumo import run_sumo
@@ -29,6 +29,7 @@ def run_batch(
     max_runs: int | None = None,
 ) -> dict:
     ensure_dirs()
+    cfg = load_config(config_path)
     rows = []
     run_counter = 0
     for seed in seeds:
@@ -36,7 +37,7 @@ def run_batch(
             for penetration in penetrations:
                 if max_runs is not None and run_counter >= max_runs:
                     break
-                rid = run_id(seed, volume, penetration)
+                rid = scenario_run_id(cfg, seed, volume, penetration)
                 print(f"[batch] start {rid}", flush=True)
                 run_sumo(config_path, seed, volume, penetration, duration, gui=False)
                 event_result = extract_events(config_path, rid)

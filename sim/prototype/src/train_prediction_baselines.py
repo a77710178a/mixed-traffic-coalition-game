@@ -4,6 +4,7 @@ import argparse
 import csv
 import json
 import math
+import re
 from pathlib import Path
 
 import numpy as np
@@ -42,9 +43,10 @@ def load_jsonl(path: Path) -> list[dict]:
 
 
 def seed_from_run_id(run_id: str) -> int:
-    # run_id format: seed5_medium_pen50
-    first = run_id.split("_", 1)[0]
-    return int(first.replace("seed", ""))
+    match = re.search(r"(?:^|_)seed(\d+)(?:_|$)", run_id)
+    if match is None:
+        raise ValueError(f"Cannot parse seed from run_id: {run_id}")
+    return int(match.group(1))
 
 
 def feature_vector(sample: dict) -> list[float]:

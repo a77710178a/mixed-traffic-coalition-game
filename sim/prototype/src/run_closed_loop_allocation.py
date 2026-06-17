@@ -7,7 +7,7 @@ from collections import defaultdict
 from pathlib import Path
 
 from allocation_policy import VehicleState, build_decision, estimate_arrival_time, fairness_gini
-from common import PROTOTYPE_ROOT, distance, ensure_dirs, load_config, run_id, write_csv, write_json
+from common import PROTOTYPE_ROOT, distance, ensure_dirs, load_config, scenario_run_id, write_csv, write_json
 from generate_network import generate_network
 from generate_routes import build_routes
 from priority_predictor import HeuristicPriorityPredictor, PriorityPredictor, load_priority_predictor
@@ -118,7 +118,7 @@ def run_closed_loop_allocation(
     generate_network(config_path)
     build_routes(config_path, seed, volume, penetration, duration)
     cfg = load_config(config_path)
-    rid = run_id(seed, volume, penetration)
+    rid = scenario_run_id(cfg, seed, volume, penetration)
     route_dir = PROTOTYPE_ROOT / "routes" / rid
     route_meta = load_route_meta(route_dir)["route_meta"]
     center_x, center_y = read_junction_center(PROTOTYPE_ROOT / "networks" / "four_leg.net.xml")

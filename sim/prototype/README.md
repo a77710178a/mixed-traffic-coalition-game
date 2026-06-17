@@ -4,7 +4,7 @@ This directory contains the first runnable prototype for the paper:
 
 **Interaction-Aware Deep Prediction and Fair Coalition Allocation for Mixed Traffic at Unsignalized Intersections**
 
-The prototype is intentionally small. It generates a four-leg unsignalized intersection, creates mixed CAV/HDV traffic, records TraCI vehicle states, extracts conflict-zone events, and derives HDV yield/non-yield labels.
+The prototype is intentionally small. It generates an unsignalized intersection, creates mixed CAV/HDV traffic, records TraCI vehicle states, extracts conflict-zone events, and derives HDV yield/non-yield labels. The four-leg layout remains as the debugging baseline; the T-junction layout is the main geometry for formal experiments.
 
 ## Remote Runtime
 
@@ -35,6 +35,21 @@ python src/build_prediction_dataset.py --run-id seed1_low_pen50 --high-confidenc
 Outputs are written under `logs/`, `labels/`, and `reports/`.
 
 Prediction datasets are written under `datasets/<run_id>/` as JSONL files. Each sample contains the HDV history, interacting-vehicle history, edge features, and the primary `hdv_takes_priority` label.
+
+## T-Junction Scenario
+
+The main paper scenario is a north-south main road with an east-side branch:
+
+```bash
+python src/generate_network.py --config config/t_junction_scenario.json
+python src/generate_routes.py --config config/t_junction_scenario.json --seed 1 --volume low --penetration 0.5 --duration 60
+python src/run_sumo.py --config config/t_junction_scenario.json --seed 1 --volume low --penetration 0.5 --duration 60
+python src/render_network_preview.py \
+  --config config/t_junction_scenario.json \
+  --output reports/t_junction_network_preview.svg
+```
+
+T-junction runs use a scenario-prefixed run id such as `t_junction_unsignalized_stress_p0_seed1_low_pen50`, so they can coexist with the original four-leg debug runs.
 
 ## Prediction Baselines
 

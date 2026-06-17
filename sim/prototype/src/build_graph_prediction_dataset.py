@@ -12,7 +12,7 @@ from build_prediction_dataset import (
     _load_states,
     _nearest_row,
 )
-from common import PROTOTYPE_ROOT, ensure_dirs, read_csv, write_json
+from common import PROTOTYPE_ROOT, ensure_dirs, load_config, read_csv, scenario_run_id, write_json
 from run_label_sanity_batch import parse_csv_list
 
 
@@ -174,6 +174,7 @@ def build_graph_dataset_for_run(
 
 
 def build_graph_dataset_batch(
+    config_path: str,
     seeds: list[int],
     volumes: list[str],
     penetrations: list[float],
@@ -188,6 +189,7 @@ def build_graph_dataset_batch(
     output_name: str,
 ) -> dict:
     ensure_dirs()
+    cfg = load_config(config_path)
     out_dir = PROTOTYPE_ROOT / "graph_datasets" / output_name
     out_dir.mkdir(parents=True, exist_ok=True)
     merged_jsonl = out_dir / "graph_prediction_samples.jsonl"
@@ -199,7 +201,7 @@ def build_graph_dataset_batch(
         for seed in seeds:
             for volume in volumes:
                 for penetration in penetrations:
-                    rid = f"seed{seed}_{volume}_pen{int(round(penetration * 100))}"
+                    rid = scenario_run_id(cfg, seed, volume, penetration)
                     summary = build_graph_dataset_for_run(
                         run_id_value=rid,
                         history_s=history_s,
@@ -222,6 +224,7 @@ def build_graph_dataset_batch(
                             strict_positive += int(obj["labels"]["strict_non_yield"])
     batch_summary = {
         "output_name": output_name,
+        "config_path": config_path,
         "run_count": len(summaries),
         "total_samples": total_samples,
         "hdv_takes_priority_count": positive,
@@ -237,6 +240,7 @@ def build_graph_dataset_batch(
 
 def main() -> None:
     parser = argparse.ArgumentParser()
+    parser.add_argument("--config", default=str(PROTOTYPE_ROOT / "config" / "stress_scenario.json"))
     parser.add_argument("--seeds", default="5,6")
     parser.add_argument("--volumes", default="low,medium,high")
     parser.add_argument("--penetrations", default="0.2,0.5,0.8")
@@ -251,6 +255,7 @@ def main() -> None:
     parser.add_argument("--output-name", default="stress_seed5_6_graph_hc_h3")
     args = parser.parse_args()
     summary = build_graph_dataset_batch(
+        config_path=args.config,
         seeds=parse_csv_list(args.seeds, int),
         volumes=parse_csv_list(args.volumes, str),
         penetrations=parse_csv_list(args.penetrations, float),
