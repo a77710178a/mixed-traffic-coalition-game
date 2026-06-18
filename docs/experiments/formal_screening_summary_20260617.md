@@ -23,9 +23,10 @@ This summary consolidates completed screening experiments, mechanism pilots, and
 | P3 | 24 | Adaptive release gate 300 s pilot | `docs/experiments/formal_pilot_adaptive_gate_300s_report_20260618.md` |
 | P4 | 48 | Adaptive conflict-gap sensitivity | `docs/experiments/formal_pilot_adaptive_gap_sensitivity_300s_report_20260618.md` |
 | C1 | 80 | Adaptive gate 300 s confirmatory run | `docs/experiments/formal_confirm_adaptive_gate_300s_report_20260618.md` |
-| Total | 854 | Screening, mechanism diagnosis, and first confirmatory run | this summary |
+| R2 | 270 | Full-grid adaptive robustness run | `docs/experiments/formal_r2_full_grid_robustness_report_20260619.md` |
+| Total | 1124 | Screening, mechanism diagnosis, confirmatory, and robustness runs | this summary |
 
-Runs through J1 were executed locally in the Codex workspace. R1, S1-S4, P1, P2, P3, P4, and C1 were executed on the remote server under the remote-only policy for heavy simulations.
+Runs through J1 were executed locally in the Codex workspace. R1, S1-S4, P1, P2, P3, P4, C1, and R2 were executed on the remote server under the remote-only policy for heavy simulations.
 
 ## What We Know
 
@@ -87,7 +88,7 @@ Do not claim any of the following yet:
 The current evidence supports a narrower claim:
 
 ```text
-Adaptive route-zone coalition allocation can reduce mean travel time while improving aggregate PET and near-conflict metrics in the 10-seed, 300 s T-junction prototype, but throughput, waiting fairness, conflict-pair count, and low-PET worst cases remain limitations.
+Adaptive route-zone coalition allocation can reduce mean travel time and improve aggregate PET in the 10-seed, 300 s T-junction prototype, but near-conflict count, waiting fairness, conflict-pair count, and low-PET worst cases remain limitations in the full-grid robustness run.
 ```
 
 ## Current Main Candidate
@@ -349,6 +350,47 @@ adaptive mean PET: 92.63 s
 ```
 
 C1 passes the predefined aggregate acceptance rule, so adaptive `cgap=2.4` becomes the current main method candidate for the prototype evidence package. The result should still be framed carefully: it supports lower mean travel time, better aggregate PET, and slightly fewer near conflicts, but it does not support throughput superiority, waiting-fairness superiority, or a per-run PET guarantee.
+
+R2 then tested the accepted adaptive gate on the full 300 s robustness grid:
+
+```text
+seeds = 1..10
+volumes = low, medium, high
+CAV penetration = 0.2, 0.5, 0.8
+methods = fcfs, prediction_fcfs, adaptive coalition
+runs = 270
+```
+
+R2 aggregate result:
+
+```text
+FCFS throughput: 36.01
+adaptive throughput: 37.03
+
+FCFS mean travel time: 141.91 s
+adaptive mean travel time: 137.28 s
+
+FCFS near-conflict count: 1.51
+adaptive near-conflict count: 1.61
+
+FCFS min PET: 3.13 s
+adaptive min PET: 3.46 s
+
+FCFS mean PET: 89.67 s
+adaptive mean PET: 91.35 s
+```
+
+R2 strengthens the efficiency and aggregate-PET evidence, but it weakens any simple safety-superiority wording because near-conflict count and conflict-pair count increase. CAV penetration sensitivity must be described carefully: 20% CAV penetration gives the largest relative efficiency gain because FCFS has more room for improvement, while 80% CAV penetration gives better absolute PET/near-conflict behavior but smaller efficiency gains because the current release cap cannot fully exploit the larger controllable CAV fleet.
+
+The next method experiment should be R3 high-CAV release-cap sensitivity:
+
+```text
+penetration = 0.8
+volumes = low, medium, high
+seeds = 1..10
+duration = 300 s
+compare current cap base 2 / adaptive 3 against wider cap base 3 / adaptive 4
+```
 
 ## Remote Server Use
 
