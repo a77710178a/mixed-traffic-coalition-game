@@ -19,9 +19,10 @@ This summary consolidates completed screening experiments. It does not make fina
 | R1 | 90 | Selected-candidate re-screening | `docs/experiments/formal_rescreen_selected_candidate_report_20260618.md` |
 | S1-S4 | 180 | Safety-constrained candidate screen | `docs/experiments/formal_safety_constrained_candidate_screen_report_20260618.md` |
 | P1 | 24 | S3 300 s pilot | `docs/experiments/formal_pilot_s3_300s_report_20260618.md` |
-| Total | 654 | Screening and mechanism diagnosis | this summary |
+| P2 | 48 | CAV waiting tie-breaker 300 s pilot | `docs/experiments/formal_pilot_wait_tiebreaker_300s_report_20260618.md` |
+| Total | 702 | Screening and mechanism diagnosis | this summary |
 
-Runs through J1 were executed locally in the Codex workspace. R1, S1-S4, and P1 were executed on the remote server under the remote-only policy for heavy simulations.
+Runs through J1 were executed locally in the Codex workspace. R1, S1-S4, P1, and P2 were executed on the remote server under the remote-only policy for heavy simulations.
 
 ## What We Know
 
@@ -201,7 +202,39 @@ waiting Gini: 0.6269 vs 0.6279
 
 This pilot does not support S3 as an efficiency-improving final default under longer simulation. It supports S3 as a safety-leaning conservative variant: near conflicts, mean PET, min PET, and waiting Gini improve slightly, but throughput and travel time do not.
 
-Do not run the full 300 s, 10-seed confirmatory experiment yet. The next method step should adjust the release rule, likely by keeping the safer `max_release_count=2` / `safe_arrival_gap_s=1.2` structure while adding a throughput-preserving tie-breaker or reducing fairness regularization.
+The follow-up P2 pilot tested this adjustment:
+
+```text
+max_release_count = 2
+safe_arrival_gap_s = 1.2
+cav_waiting_tiebreaker_weight = 0.1
+fairness_weight in {0.0, 0.1}
+duration = 300 s
+runs = 48
+```
+
+P2 result:
+
+```text
+FCFS throughput: 31.42
+S3 throughput: 30.25
+W0 throughput: 30.25
+W1 throughput: 30.25
+
+FCFS mean travel time: 158.33 s
+S3 mean travel time: 158.62 s
+W0 mean travel time: 156.75 s
+W1 mean travel time: 158.52 s
+
+FCFS mean PET: 89.77 s
+S3 mean PET: 92.41 s
+W0 mean PET: 92.61 s
+W1 mean PET: 92.28 s
+```
+
+P2 shows that the CAV waiting tie-breaker improves W0 travel time and preserves the S3 PET/near-conflict behavior, but it does not recover throughput. This suggests the bottleneck is not mainly the fairness ordering; it is the release eligibility structure itself.
+
+Do not run the full 300 s, 10-seed confirmatory experiment yet. The next method step should replace the static release cap/gap rule with an adaptive release-set gate: keep the safer two-vehicle base cap, but conditionally allow an additional low-risk CAV release when projected route conflict, arrival separation, and current conflict-zone occupancy are all safe.
 
 ## Remote Server Use
 
