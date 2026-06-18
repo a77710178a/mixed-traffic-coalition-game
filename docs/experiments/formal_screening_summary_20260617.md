@@ -21,9 +21,10 @@ This summary consolidates completed screening experiments. It does not make fina
 | P1 | 24 | S3 300 s pilot | `docs/experiments/formal_pilot_s3_300s_report_20260618.md` |
 | P2 | 48 | CAV waiting tie-breaker 300 s pilot | `docs/experiments/formal_pilot_wait_tiebreaker_300s_report_20260618.md` |
 | P3 | 24 | Adaptive release gate 300 s pilot | `docs/experiments/formal_pilot_adaptive_gate_300s_report_20260618.md` |
-| Total | 726 | Screening and mechanism diagnosis | this summary |
+| P4 | 48 | Adaptive conflict-gap sensitivity | `docs/experiments/formal_pilot_adaptive_gap_sensitivity_300s_report_20260618.md` |
+| Total | 774 | Screening and mechanism diagnosis | this summary |
 
-Runs through J1 were executed locally in the Codex workspace. R1, S1-S4, P1, P2, and P3 were executed on the remote server under the remote-only policy for heavy simulations.
+Runs through J1 were executed locally in the Codex workspace. R1, S1-S4, P1, P2, P3, and P4 were executed on the remote server under the remote-only policy for heavy simulations.
 
 ## What We Know
 
@@ -271,7 +272,36 @@ adaptive mean PET: 93.31 s
 
 P3 supports the adaptive release gate as a useful mechanism direction: it improves travel time and mean PET relative to W0 and gives a small throughput recovery. However, the current `adaptive_min_conflict_arrival_gap_s=2.4` setting reduces min PET, so it is not ready as the final method.
 
-Do not run the full 300 s, 10-seed confirmatory experiment yet. The next method step should test a stricter adaptive gate, likely `adaptive_min_conflict_arrival_gap_s in {3.6, 4.0}` or an explicit projected-PET guard for the extra release.
+P4 tested stricter conflict-arrival gaps:
+
+```text
+adaptive_min_conflict_arrival_gap_s in {3.6, 4.0}
+same 300 s protocol
+runs = 48
+```
+
+P4 result:
+
+```text
+W0 throughput: 30.25
+adaptive cgap=2.4 throughput: 30.33
+adaptive cgap=3.6 throughput: 30.33
+adaptive cgap=4.0 throughput: 30.33
+
+W0 mean travel time: 156.75 s
+adaptive cgap=2.4 mean travel time: 156.44 s
+adaptive cgap=3.6 mean travel time: 156.62 s
+adaptive cgap=4.0 mean travel time: 156.62 s
+
+W0 min PET: 3.42 s
+adaptive cgap=2.4 min PET: 3.12 s
+adaptive cgap=3.6 min PET: 3.12 s
+adaptive cgap=4.0 min PET: 3.12 s
+```
+
+P4 shows that increasing `adaptive_min_conflict_arrival_gap_s` alone does not repair the min-PET regression. The risky cases are likely passing the static conflict-route gate or being driven by a local entry-gap/PET condition not captured by the current route-conflict rule.
+
+Do not run the full 300 s, 10-seed confirmatory experiment yet. The next method step should add an explicit extra-release safety guard, such as a projected minimum entry-gap or projected-PET threshold across all already released vehicles.
 
 ## Remote Server Use
 
