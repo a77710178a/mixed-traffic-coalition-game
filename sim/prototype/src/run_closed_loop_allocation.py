@@ -12,6 +12,7 @@ from extract_conflict_events import extract_events
 from generate_network import generate_network
 from generate_routes import build_routes
 from priority_predictor import HeuristicPriorityPredictor, PriorityPredictor, load_priority_predictor
+from route_geometry import load_route_geometry
 from run_sumo import ensure_traci, load_route_meta, read_junction_center
 from safety_metrics import write_safety_outputs
 
@@ -28,6 +29,7 @@ def _candidate_states(
     center_y: float,
     control_radius_m: float,
     priority_predictor: PriorityPredictor,
+    route_meta: dict,
 ) -> list[VehicleState]:
     candidates = []
     for veh_id in traci.vehicle.getIDList():
@@ -36,6 +38,8 @@ def _candidate_states(
         if dist > control_radius_m:
             continue
         veh_type = traci.vehicle.getTypeID(veh_id)
+        route_id = traci.vehicle.getRouteID(veh_id)
+        route_info = route_meta.get(route_id, {})
         candidates.append(
             VehicleState(
                 veh_id=veh_id,
@@ -43,6 +47,10 @@ def _candidate_states(
                 distance_to_center=dist,
                 speed=max(0.0, _safe_float(traci.vehicle.getSpeed(veh_id))),
                 waiting_time=max(0.0, _safe_float(traci.vehicle.getWaitingTime(veh_id))),
+                route_id=route_id,
+                origin=str(route_info.get("origin", "")),
+                destination=str(route_info.get("destination", "")),
+                movement=str(route_info.get("movement", "")),
             )
         )
     enriched = []
@@ -55,9 +63,17 @@ def _candidate_states(
                 speed=vehicle.speed,
                 waiting_time=vehicle.waiting_time,
                 priority_probability=priority_predictor.predict(vehicle, candidates),
+                route_id=vehicle.route_id,
+                origin=vehicle.origin,
+                destination=vehicle.destination,
+                movement=vehicle.movement,
             )
         )
     return enriched
+
+
+def _conflict_zone_occupancy(candidates: list[VehicleState], zone_radius_m: float) -> int:
+    return sum(1 for vehicle in candidates if float(vehicle.distance_to_center) <= float(zone_radius_m))
 
 
 def _apply_decision(
@@ -109,7 +125,11 @@ def run_closed_loop_allocation(
     max_release_count: int,
     safe_arrival_gap_s: float,
     cav_waiting_tiebreaker_weight: float,
-    near_conflict_pet_s: float,
+    adaptive_release_enabled: bool = False,
+    adaptive_max_release_count: int | None = None,
+    adaptive_min_conflict_arrival_gap_s: float = 2.4,
+    adaptive_max_occupancy: int = 0,
+    near_conflict_pet_s: float = 1.5,
     priority_model: str | None = None,
     gui: bool = False,
 ) -> dict[str, Path | str | float | int]:
@@ -125,6 +145,9 @@ def run_closed_loop_allocation(
     route_dir = PROTOTYPE_ROOT / "routes" / rid
     route_meta = load_route_meta(route_dir)["route_meta"]
     center_x, center_y = read_junction_center(PROTOTYPE_ROOT / "networks" / "four_leg.net.xml")
+    route_conflict_matrix = None
+    if cfg.get("geometry_mode") == "route_zones" and geometry_path.exists():
+        route_conflict_matrix = load_route_geometry(geometry_path).get("conflict_matrix")
     priority_predictor = load_priority_predictor(priority_model)
     predictor_type = "heuristic" if isinstance(priority_predictor, HeuristicPriorityPredictor) else "logistic"
 
@@ -150,7 +173,8 @@ def run_closed_loop_allocation(
         while traci.simulation.getTime() <= float(duration) and traci.simulation.getMinExpectedNumber() > 0:
             traci.simulationStep()
             now = float(traci.simulation.getTime())
-            candidates = _candidate_states(traci, center_x, center_y, control_radius_m, priority_predictor)
+            candidates = _candidate_states(traci, center_x, center_y, control_radius_m, priority_predictor, route_meta)
+            zone_radius_m = float(cfg["conflict_zones"][0]["radius_m"])
             decision = build_decision(
                 candidates,
                 method=method,
@@ -159,6 +183,12 @@ def run_closed_loop_allocation(
                 max_release_count=max_release_count,
                 safe_arrival_gap_s=safe_arrival_gap_s,
                 cav_waiting_tiebreaker_weight=cav_waiting_tiebreaker_weight,
+                adaptive_release_enabled=adaptive_release_enabled,
+                adaptive_max_release_count=adaptive_max_release_count,
+                adaptive_min_conflict_arrival_gap_s=adaptive_min_conflict_arrival_gap_s,
+                adaptive_max_occupancy=adaptive_max_occupancy,
+                conflict_zone_occupancy=_conflict_zone_occupancy(candidates, zone_radius_m),
+                route_conflict_matrix=route_conflict_matrix,
             )
             actions = _apply_decision(traci, decision, candidates, hold_speed_mps, controlled_ids)
             min_ttc = _min_pairwise_ttc(candidates)
@@ -270,6 +300,10 @@ def run_closed_loop_allocation(
         "max_release_count": max_release_count,
         "safe_arrival_gap_s": safe_arrival_gap_s,
         "cav_waiting_tiebreaker_weight": cav_waiting_tiebreaker_weight,
+        "adaptive_release_enabled": adaptive_release_enabled,
+        "adaptive_max_release_count": adaptive_max_release_count,
+        "adaptive_min_conflict_arrival_gap_s": adaptive_min_conflict_arrival_gap_s,
+        "adaptive_max_occupancy": adaptive_max_occupancy,
         "near_conflict_pet_s": near_conflict_pet_s,
         "priority_model": priority_model or "",
         "priority_predictor_type": predictor_type,
@@ -318,6 +352,10 @@ def main() -> None:
     parser.add_argument("--max-release-count", type=int, default=3)
     parser.add_argument("--safe-arrival-gap-s", type=float, default=1.2)
     parser.add_argument("--cav-waiting-tiebreaker-weight", type=float, default=0.0)
+    parser.add_argument("--adaptive-release-enabled", nargs="?", const="true", default="false", choices=["true", "false"])
+    parser.add_argument("--adaptive-max-release-count", type=int, default=None)
+    parser.add_argument("--adaptive-min-conflict-arrival-gap-s", type=float, default=2.4)
+    parser.add_argument("--adaptive-max-occupancy", type=int, default=0)
     parser.add_argument("--near-conflict-pet-s", type=float, default=1.5)
     parser.add_argument("--priority-model", default=None)
     parser.add_argument("--gui", action="store_true")
@@ -336,6 +374,10 @@ def main() -> None:
         max_release_count=args.max_release_count,
         safe_arrival_gap_s=args.safe_arrival_gap_s,
         cav_waiting_tiebreaker_weight=args.cav_waiting_tiebreaker_weight,
+        adaptive_release_enabled=args.adaptive_release_enabled == "true",
+        adaptive_max_release_count=args.adaptive_max_release_count,
+        adaptive_min_conflict_arrival_gap_s=args.adaptive_min_conflict_arrival_gap_s,
+        adaptive_max_occupancy=args.adaptive_max_occupancy,
         near_conflict_pet_s=args.near_conflict_pet_s,
         priority_model=args.priority_model,
         gui=args.gui,

@@ -53,6 +53,10 @@ def _command(job: ExperimentJob) -> str:
             f"--max-release-count {params['max_release_count']} "
             f"--safe-arrival-gap-s {params['safe_arrival_gap_s']} "
             f"--cav-waiting-tiebreaker-weight {params['cav_waiting_tiebreaker_weight']} "
+            f"--adaptive-release-enabled {str(params['adaptive_release_enabled']).lower()} "
+            f"--adaptive-max-release-count {params['adaptive_max_release_count']} "
+            f"--adaptive-min-conflict-arrival-gap-s {params['adaptive_min_conflict_arrival_gap_s']} "
+            f"--adaptive-max-occupancy {params['adaptive_max_occupancy']} "
             f"--near-conflict-pet-s {params['near_conflict_pet_s']} "
             f"--output-name {params['output_name']}"
         )
@@ -190,7 +194,12 @@ def _closed_loop_params(
     max_release_count: int = 3,
     safe_arrival_gap_s: float = 1.2,
     cav_waiting_tiebreaker_weight: float = 0.0,
+    adaptive_release_enabled: bool = False,
+    adaptive_max_release_count: int | None = None,
+    adaptive_min_conflict_arrival_gap_s: float = 2.4,
+    adaptive_max_occupancy: int = 0,
 ) -> dict:
+    adaptive_cap = max_release_count if adaptive_max_release_count is None else adaptive_max_release_count
     return {
         "config_path": config_path,
         "seeds": seeds,
@@ -205,6 +214,10 @@ def _closed_loop_params(
         "max_release_count": max_release_count,
         "safe_arrival_gap_s": safe_arrival_gap_s,
         "cav_waiting_tiebreaker_weight": cav_waiting_tiebreaker_weight,
+        "adaptive_release_enabled": adaptive_release_enabled,
+        "adaptive_max_release_count": adaptive_cap,
+        "adaptive_min_conflict_arrival_gap_s": adaptive_min_conflict_arrival_gap_s,
+        "adaptive_max_occupancy": adaptive_max_occupancy,
         "near_conflict_pet_s": 1.5,
         "priority_model": None,
         "output_name": output_name,

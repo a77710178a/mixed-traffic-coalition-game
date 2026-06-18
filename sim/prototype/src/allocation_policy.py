@@ -11,6 +11,10 @@ class VehicleState:
     speed: float
     waiting_time: float
     priority_probability: float = 0.5
+    route_id: str = ""
+    origin: str = ""
+    destination: str = ""
+    movement: str = ""
 
 
 @dataclass(frozen=True)
@@ -63,12 +67,71 @@ def _is_close_arrival(a: VehicleState, b: VehicleState, safe_arrival_gap_s: floa
     return abs(estimate_arrival_time(a) - estimate_arrival_time(b)) < safe_arrival_gap_s
 
 
+def _route_relation_conflicts(route_conflict_matrix: dict | None, route_a: str, route_b: str) -> bool | None:
+    if not route_conflict_matrix or not route_a or not route_b:
+        return None
+    relation = route_conflict_matrix.get(route_a, {}).get(route_b)
+    if relation is None:
+        return None
+    return bool(relation.get("conflicts", False))
+
+
+def _violates_hdv_close_arrival_protection(
+    vehicle: VehicleState,
+    high_risk_hdvs: list[VehicleState],
+    released_ids: set[str],
+    safe_arrival_gap_s: float,
+) -> bool:
+    return vehicle.veh_class.upper() == "CAV" and any(
+        _is_close_arrival(vehicle, hdv, safe_arrival_gap_s) and hdv.veh_id not in released_ids
+        for hdv in high_risk_hdvs
+    )
+
+
+def _can_adaptively_release(
+    candidate: VehicleState,
+    release: list[VehicleState],
+    high_risk_hdvs: list[VehicleState],
+    risk_threshold: float,
+    safe_arrival_gap_s: float,
+    adaptive_min_conflict_arrival_gap_s: float,
+    adaptive_max_occupancy: int,
+    conflict_zone_occupancy: int,
+    route_conflict_matrix: dict | None,
+) -> bool:
+    if candidate.veh_class.upper() != "CAV":
+        return False
+    if float(candidate.priority_probability) >= risk_threshold:
+        return False
+    if int(conflict_zone_occupancy) > int(adaptive_max_occupancy):
+        return False
+    if any(_is_close_arrival(candidate, hdv, safe_arrival_gap_s) for hdv in high_risk_hdvs):
+        return False
+    released_ids = {item.veh_id for item in release}
+    if _violates_hdv_close_arrival_protection(candidate, high_risk_hdvs, released_ids, safe_arrival_gap_s):
+        return False
+
+    for selected in release:
+        relation_conflicts = _route_relation_conflicts(route_conflict_matrix, candidate.route_id, selected.route_id)
+        if relation_conflicts is None:
+            return False
+        if relation_conflicts and _is_close_arrival(candidate, selected, adaptive_min_conflict_arrival_gap_s):
+            return False
+    return True
+
+
 def _select_release_set(
     ordered: list[VehicleState],
     method: str,
     risk_threshold: float,
     max_release_count: int,
     safe_arrival_gap_s: float,
+    adaptive_release_enabled: bool,
+    adaptive_max_release_count: int | None,
+    adaptive_min_conflict_arrival_gap_s: float,
+    adaptive_max_occupancy: int,
+    conflict_zone_occupancy: int,
+    route_conflict_matrix: dict | None,
 ) -> list[str]:
     if not ordered:
         return []
@@ -76,6 +139,7 @@ def _select_release_set(
         return [ordered[0].veh_id]
 
     release: list[VehicleState] = []
+    release_cap = max(1, int(max_release_count))
     high_risk_hdvs = [
         vehicle
         for vehicle in ordered
@@ -83,18 +147,40 @@ def _select_release_set(
     ]
 
     for vehicle in ordered:
-        if len(release) >= max(1, int(max_release_count)):
+        if len(release) >= release_cap:
             break
         if any(_is_close_arrival(vehicle, selected, safe_arrival_gap_s) for selected in release):
             continue
-        if vehicle.veh_class.upper() == "CAV" and any(
-            _is_close_arrival(vehicle, hdv, safe_arrival_gap_s) and hdv.veh_id not in {item.veh_id for item in release}
-            for hdv in high_risk_hdvs
+        if _violates_hdv_close_arrival_protection(
+            vehicle,
+            high_risk_hdvs,
+            {item.veh_id for item in release},
+            safe_arrival_gap_s,
         ):
             continue
         release.append(vehicle)
     if not release:
         release.append(ordered[0])
+
+    adaptive_cap = release_cap if adaptive_max_release_count is None else max(release_cap, int(adaptive_max_release_count))
+    if adaptive_release_enabled and len(release) < adaptive_cap:
+        release_ids = {vehicle.veh_id for vehicle in release}
+        for vehicle in ordered:
+            if vehicle.veh_id in release_ids:
+                continue
+            if _can_adaptively_release(
+                candidate=vehicle,
+                release=release,
+                high_risk_hdvs=high_risk_hdvs,
+                risk_threshold=risk_threshold,
+                safe_arrival_gap_s=safe_arrival_gap_s,
+                adaptive_min_conflict_arrival_gap_s=adaptive_min_conflict_arrival_gap_s,
+                adaptive_max_occupancy=adaptive_max_occupancy,
+                conflict_zone_occupancy=conflict_zone_occupancy,
+                route_conflict_matrix=route_conflict_matrix,
+            ):
+                release.append(vehicle)
+                break
     return [vehicle.veh_id for vehicle in release]
 
 
@@ -108,6 +194,12 @@ def build_decision(
     max_release_count: int | None = None,
     safe_arrival_gap_s: float = 1.2,
     cav_waiting_tiebreaker_weight: float = 0.0,
+    adaptive_release_enabled: bool = False,
+    adaptive_max_release_count: int | None = None,
+    adaptive_min_conflict_arrival_gap_s: float = 2.4,
+    adaptive_max_occupancy: int = 0,
+    conflict_zone_occupancy: int = 0,
+    route_conflict_matrix: dict | None = None,
 ) -> AllocationDecision:
     if not vehicles:
         return AllocationDecision(release_order=[], hold_vehicles=[], scores={}, release_vehicles=[])
@@ -146,6 +238,12 @@ def build_decision(
         risk_threshold=risk_threshold,
         max_release_count=release_limit,
         safe_arrival_gap_s=safe_arrival_gap_s,
+        adaptive_release_enabled=adaptive_release_enabled,
+        adaptive_max_release_count=adaptive_max_release_count,
+        adaptive_min_conflict_arrival_gap_s=adaptive_min_conflict_arrival_gap_s,
+        adaptive_max_occupancy=adaptive_max_occupancy,
+        conflict_zone_occupancy=conflict_zone_occupancy,
+        route_conflict_matrix=route_conflict_matrix,
     )
     release_set = set(release_vehicles)
     hold_vehicles = [veh_id for veh_id in release_order if veh_id not in release_set]

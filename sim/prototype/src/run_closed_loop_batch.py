@@ -31,6 +31,10 @@ SUMMARY_FIELDS = [
     "max_release_count",
     "safe_arrival_gap_s",
     "cav_waiting_tiebreaker_weight",
+    "adaptive_release_enabled",
+    "adaptive_max_release_count",
+    "adaptive_min_conflict_arrival_gap_s",
+    "adaptive_max_occupancy",
     "priority_predictor_type",
     "state_rows",
     "decision_rows",
@@ -93,9 +97,13 @@ def run_batch(
     max_release_count: int,
     safe_arrival_gap_s: float,
     cav_waiting_tiebreaker_weight: float,
-    near_conflict_pet_s: float,
-    priority_model: str | None,
-    output_name: str,
+    adaptive_release_enabled: bool = False,
+    adaptive_max_release_count: int | None = None,
+    adaptive_min_conflict_arrival_gap_s: float = 2.4,
+    adaptive_max_occupancy: int = 0,
+    near_conflict_pet_s: float = 1.5,
+    priority_model: str | None = None,
+    output_name: str = "closed_loop_pilot_seed7_9_low_medium_pen50",
 ) -> dict:
     ensure_dirs()
     out_dir = PROTOTYPE_ROOT / "reports" / output_name
@@ -120,6 +128,10 @@ def run_batch(
                         max_release_count=max_release_count,
                         safe_arrival_gap_s=safe_arrival_gap_s,
                         cav_waiting_tiebreaker_weight=cav_waiting_tiebreaker_weight,
+                        adaptive_release_enabled=adaptive_release_enabled,
+                        adaptive_max_release_count=adaptive_max_release_count,
+                        adaptive_min_conflict_arrival_gap_s=adaptive_min_conflict_arrival_gap_s,
+                        adaptive_max_occupancy=adaptive_max_occupancy,
                         near_conflict_pet_s=near_conflict_pet_s,
                         priority_model=priority_model,
                         gui=False,
@@ -148,6 +160,10 @@ def run_batch(
         "max_release_count": max_release_count,
         "safe_arrival_gap_s": safe_arrival_gap_s,
         "cav_waiting_tiebreaker_weight": cav_waiting_tiebreaker_weight,
+        "adaptive_release_enabled": adaptive_release_enabled,
+        "adaptive_max_release_count": adaptive_max_release_count,
+        "adaptive_min_conflict_arrival_gap_s": adaptive_min_conflict_arrival_gap_s,
+        "adaptive_max_occupancy": adaptive_max_occupancy,
         "near_conflict_pet_s": near_conflict_pet_s,
         "priority_model": priority_model or "",
         "run_count": len(rows),
@@ -174,6 +190,10 @@ def main() -> None:
     parser.add_argument("--max-release-count", type=int, default=3)
     parser.add_argument("--safe-arrival-gap-s", type=float, default=1.2)
     parser.add_argument("--cav-waiting-tiebreaker-weight", type=float, default=0.0)
+    parser.add_argument("--adaptive-release-enabled", nargs="?", const="true", default="false", choices=["true", "false"])
+    parser.add_argument("--adaptive-max-release-count", type=int, default=None)
+    parser.add_argument("--adaptive-min-conflict-arrival-gap-s", type=float, default=2.4)
+    parser.add_argument("--adaptive-max-occupancy", type=int, default=0)
     parser.add_argument("--near-conflict-pet-s", type=float, default=1.5)
     parser.add_argument("--priority-model", default=None)
     parser.add_argument("--output-name", default="closed_loop_pilot_seed7_9_low_medium_pen50")
@@ -193,6 +213,10 @@ def main() -> None:
         max_release_count=args.max_release_count,
         safe_arrival_gap_s=args.safe_arrival_gap_s,
         cav_waiting_tiebreaker_weight=args.cav_waiting_tiebreaker_weight,
+        adaptive_release_enabled=args.adaptive_release_enabled == "true",
+        adaptive_max_release_count=args.adaptive_max_release_count,
+        adaptive_min_conflict_arrival_gap_s=args.adaptive_min_conflict_arrival_gap_s,
+        adaptive_max_occupancy=args.adaptive_max_occupancy,
         near_conflict_pet_s=args.near_conflict_pet_s,
         priority_model=args.priority_model,
         output_name=args.output_name,

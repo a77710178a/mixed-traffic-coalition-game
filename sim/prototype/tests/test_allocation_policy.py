@@ -77,6 +77,130 @@ class AllocationPolicyTest(unittest.TestCase):
         self.assertEqual(decision.release_vehicles, ["hdv"])
         self.assertIn("cav", decision.hold_vehicles)
 
+    def test_adaptive_gate_adds_low_risk_cav_on_non_conflicting_route(self) -> None:
+        vehicles = [
+            VehicleState("a", "CAV", distance_to_center=10.0, speed=5.0, waiting_time=0.0, route_id="r_N_through"),
+            VehicleState("b", "CAV", distance_to_center=18.0, speed=5.0, waiting_time=0.0, route_id="r_S_through"),
+            VehicleState("c", "CAV", distance_to_center=26.0, speed=5.0, waiting_time=0.0, route_id="r_E_right"),
+        ]
+        route_conflicts = {
+            "r_N_through": {"r_S_through": {"conflicts": False}, "r_E_right": {"conflicts": False}},
+            "r_S_through": {"r_N_through": {"conflicts": False}, "r_E_right": {"conflicts": False}},
+            "r_E_right": {"r_N_through": {"conflicts": False}, "r_S_through": {"conflicts": False}},
+        }
+
+        decision = build_decision(
+            vehicles,
+            method="prediction_coalition",
+            max_release_count=2,
+            safe_arrival_gap_s=1.0,
+            adaptive_release_enabled=True,
+            adaptive_max_release_count=3,
+            route_conflict_matrix=route_conflicts,
+            conflict_zone_occupancy=0,
+        )
+
+        self.assertEqual(decision.release_vehicles, ["a", "b", "c"])
+        self.assertEqual(decision.hold_vehicles, [])
+
+    def test_adaptive_gate_blocks_conflicting_cav_without_extra_gap(self) -> None:
+        vehicles = [
+            VehicleState("a", "CAV", distance_to_center=10.0, speed=5.0, waiting_time=0.0, route_id="r_N_left"),
+            VehicleState("b", "CAV", distance_to_center=18.0, speed=5.0, waiting_time=0.0, route_id="r_S_right"),
+            VehicleState("c", "CAV", distance_to_center=26.0, speed=5.0, waiting_time=0.0, route_id="r_E_left"),
+        ]
+        route_conflicts = {
+            "r_N_left": {"r_S_right": {"conflicts": False}, "r_E_left": {"conflicts": True}},
+            "r_S_right": {"r_N_left": {"conflicts": False}, "r_E_left": {"conflicts": False}},
+            "r_E_left": {"r_N_left": {"conflicts": True}, "r_S_right": {"conflicts": False}},
+        }
+
+        decision = build_decision(
+            vehicles,
+            method="prediction_coalition",
+            max_release_count=2,
+            safe_arrival_gap_s=1.0,
+            adaptive_release_enabled=True,
+            adaptive_max_release_count=3,
+            adaptive_min_conflict_arrival_gap_s=6.0,
+            route_conflict_matrix=route_conflicts,
+            conflict_zone_occupancy=0,
+        )
+
+        self.assertEqual(decision.release_vehicles, ["a", "b"])
+        self.assertIn("c", decision.hold_vehicles)
+
+    def test_adaptive_gate_blocks_extra_release_when_zone_is_occupied(self) -> None:
+        vehicles = [
+            VehicleState("a", "CAV", distance_to_center=10.0, speed=5.0, waiting_time=0.0, route_id="r_N_through"),
+            VehicleState("b", "CAV", distance_to_center=18.0, speed=5.0, waiting_time=0.0, route_id="r_S_through"),
+            VehicleState("c", "CAV", distance_to_center=26.0, speed=5.0, waiting_time=0.0, route_id="r_E_right"),
+        ]
+        route_conflicts = {
+            "r_N_through": {"r_S_through": {"conflicts": False}, "r_E_right": {"conflicts": False}},
+            "r_S_through": {"r_N_through": {"conflicts": False}, "r_E_right": {"conflicts": False}},
+            "r_E_right": {"r_N_through": {"conflicts": False}, "r_S_through": {"conflicts": False}},
+        }
+
+        decision = build_decision(
+            vehicles,
+            method="prediction_coalition",
+            max_release_count=2,
+            safe_arrival_gap_s=1.0,
+            adaptive_release_enabled=True,
+            adaptive_max_release_count=3,
+            adaptive_max_occupancy=0,
+            route_conflict_matrix=route_conflicts,
+            conflict_zone_occupancy=1,
+        )
+
+        self.assertEqual(decision.release_vehicles, ["a", "b"])
+        self.assertIn("c", decision.hold_vehicles)
+
+    def test_adaptive_gate_does_not_bypass_high_risk_hdv_gap(self) -> None:
+        vehicles = [
+            VehicleState("hdv", "HDV", distance_to_center=10.0, speed=5.0, waiting_time=0.0, priority_probability=0.9, route_id="r_N_left"),
+            VehicleState("cav_a", "CAV", distance_to_center=18.0, speed=5.0, waiting_time=0.0, route_id="r_S_through"),
+            VehicleState("cav_b", "CAV", distance_to_center=11.0, speed=5.0, waiting_time=0.0, route_id="r_E_left"),
+        ]
+        route_conflicts = {
+            "r_N_left": {"r_S_through": {"conflicts": False}, "r_E_left": {"conflicts": False}},
+            "r_S_through": {"r_N_left": {"conflicts": False}, "r_E_left": {"conflicts": False}},
+            "r_E_left": {"r_N_left": {"conflicts": False}, "r_S_through": {"conflicts": False}},
+        }
+
+        decision = build_decision(
+            vehicles,
+            method="prediction_coalition",
+            risk_threshold=0.7,
+            max_release_count=2,
+            safe_arrival_gap_s=1.0,
+            adaptive_release_enabled=True,
+            adaptive_max_release_count=3,
+            route_conflict_matrix=route_conflicts,
+            conflict_zone_occupancy=0,
+        )
+
+        self.assertEqual(decision.release_vehicles, ["hdv", "cav_a"])
+        self.assertIn("cav_b", decision.hold_vehicles)
+
+    def test_adaptive_gate_is_disabled_by_default(self) -> None:
+        vehicles = [
+            VehicleState("a", "CAV", distance_to_center=10.0, speed=5.0, waiting_time=0.0, route_id="r_N_through"),
+            VehicleState("b", "CAV", distance_to_center=18.0, speed=5.0, waiting_time=0.0, route_id="r_S_through"),
+            VehicleState("c", "CAV", distance_to_center=26.0, speed=5.0, waiting_time=0.0, route_id="r_E_right"),
+        ]
+
+        decision = build_decision(
+            vehicles,
+            method="prediction_coalition",
+            max_release_count=2,
+            safe_arrival_gap_s=1.0,
+        )
+
+        self.assertEqual(decision.release_vehicles, ["a", "b"])
+        self.assertIn("c", decision.hold_vehicles)
+
     def test_coalition_releases_multiple_low_conflict_cavs(self) -> None:
         vehicles = [
             VehicleState("cav_a", "CAV", distance_to_center=10.0, speed=5.0, waiting_time=0.0),

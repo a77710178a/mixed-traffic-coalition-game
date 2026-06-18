@@ -75,6 +75,10 @@ class FormalExperimentQueueTest(unittest.TestCase):
         self.assertEqual(jobs[0].params["safe_arrival_gap_s"], 0.8)
         self.assertEqual(jobs[0].params["fairness_weight"], 0.15)
         self.assertEqual(jobs[0].params["cav_waiting_tiebreaker_weight"], 0.0)
+        self.assertEqual(jobs[0].params["adaptive_release_enabled"], False)
+        self.assertEqual(jobs[0].params["adaptive_max_release_count"], 2)
+        self.assertEqual(jobs[0].params["adaptive_min_conflict_arrival_gap_s"], 2.4)
+        self.assertEqual(jobs[0].params["adaptive_max_occupancy"], 0)
         self.assertEqual(jobs[0].params["volumes"], ["medium", "high"])
         self.assertEqual(jobs[0].params["penetrations"], [0.5])
 
@@ -89,6 +93,10 @@ class FormalExperimentQueueTest(unittest.TestCase):
         self.assertEqual(payload["job_count"], 2)
         self.assertEqual(payload["jobs"][0]["job_id"], "E1_label_event_sanity")
         self.assertIn("--cav-waiting-tiebreaker-weight 0.0", payload["jobs"][1]["command"])
+        self.assertIn("--adaptive-release-enabled false", payload["jobs"][1]["command"])
+        self.assertIn("--adaptive-max-release-count 3", payload["jobs"][1]["command"])
+        self.assertIn("--adaptive-min-conflict-arrival-gap-s 2.4", payload["jobs"][1]["command"])
+        self.assertIn("--adaptive-max-occupancy 0", payload["jobs"][1]["command"])
         self.assertIn("TBD", payload["no_fabrication_note"])
 
     def test_run_selected_jobs_uses_backend_functions(self) -> None:
