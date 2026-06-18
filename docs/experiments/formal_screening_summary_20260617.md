@@ -4,7 +4,7 @@ Date: 2026-06-17
 
 Scope: T-junction route-zone geometry, mixed CAV/HDV traffic, unsignalized coalition allocation.
 
-This summary consolidates completed screening experiments. It does not make final paper claims.
+This summary consolidates completed screening experiments, mechanism pilots, and the first 10-seed confirmatory run. It does not make final paper claims.
 
 ## Completed Runs
 
@@ -22,9 +22,10 @@ This summary consolidates completed screening experiments. It does not make fina
 | P2 | 48 | CAV waiting tie-breaker 300 s pilot | `docs/experiments/formal_pilot_wait_tiebreaker_300s_report_20260618.md` |
 | P3 | 24 | Adaptive release gate 300 s pilot | `docs/experiments/formal_pilot_adaptive_gate_300s_report_20260618.md` |
 | P4 | 48 | Adaptive conflict-gap sensitivity | `docs/experiments/formal_pilot_adaptive_gap_sensitivity_300s_report_20260618.md` |
-| Total | 774 | Screening and mechanism diagnosis | this summary |
+| C1 | 80 | Adaptive gate 300 s confirmatory run | `docs/experiments/formal_confirm_adaptive_gate_300s_report_20260618.md` |
+| Total | 854 | Screening, mechanism diagnosis, and first confirmatory run | this summary |
 
-Runs through J1 were executed locally in the Codex workspace. R1, S1-S4, P1, P2, P3, and P4 were executed on the remote server under the remote-only policy for heavy simulations.
+Runs through J1 were executed locally in the Codex workspace. R1, S1-S4, P1, P2, P3, P4, and C1 were executed on the remote server under the remote-only policy for heavy simulations.
 
 ## What We Know
 
@@ -76,7 +77,8 @@ A1 shows that the fairness weight currently behaves more like a regularizer:
 
 Do not claim any of the following yet:
 
-- "The proposed method is safer than FCFS."
+- "The proposed method is universally safer than FCFS in every run."
+- "The proposed method is throughput-superior to FCFS."
 - "The fairness term substantially improves fairness."
 - "Larger safe gap always improves safety."
 - "Prediction alone improves closed-loop behavior."
@@ -85,18 +87,32 @@ Do not claim any of the following yet:
 The current evidence supports a narrower claim:
 
 ```text
-Route-zone coalition allocation can produce an efficiency gain in a T-junction mixed-traffic prototype, but the release-set and fairness/safety parameters must be tuned jointly to avoid PET and near-conflict regressions.
+Adaptive route-zone coalition allocation can reduce mean travel time while improving aggregate PET and near-conflict metrics in the 10-seed, 300 s T-junction prototype, but throughput, waiting fairness, conflict-pair count, and low-PET worst cases remain limitations.
 ```
 
-## Current Best Candidate Settings
+## Current Main Candidate
 
-Based on completed screening and the completed J1 joint tuning sweep:
+After the P1-P4 mechanism pilots and C1 confirmatory run, the current paper-prototype main candidate is the adaptive release gate:
+
+```text
+max_release_count = 2
+adaptive_release_enabled = true
+adaptive_max_release_count = 3
+safe_arrival_gap_s = 1.2
+adaptive_min_conflict_arrival_gap_s = 2.4
+adaptive_max_occupancy = 0
+fairness_weight = 0.0
+cav_waiting_tiebreaker_weight = 0.1
+```
+
+Candidate roles after C1:
 
 | Candidate | Why |
 | --- | --- |
-| `max_release_count=3`, `safe_arrival_gap_s=0.8`, `fairness_weight=0.3` | Selected J1 candidate: near-conflict count matches matched FCFS, PET is slightly higher than matched FCFS, and throughput/travel time improve |
-| `max_release_count=2`, `safe_arrival_gap_s=1.2`, `fairness_weight=0.15` | Conservative fallback with strong PET but weaker throughput |
-| `max_release_count=3`, `safe_arrival_gap_s=0.8`, `fairness_weight=0.15` | Higher-throughput candidate rejected for now because near-conflict count increases |
+| Adaptive gate `mr=2,amr=3,gap=1.2,cgap=2.4,occ=0,fw=0.0,tb=0.1` | Current main method candidate. It passes the predefined 10-seed aggregate acceptance rule and gives the best confirmed travel-time/PET balance so far. |
+| W0 `mr=2,gap=1.2,fw=0.0,tb=0.1` | Conservative ablation and fallback. It improves mean travel time over S3 but does not recover throughput. |
+| S3 `mr=2,gap=1.2,fw=0.15` | Safety-leaning ablation. It improves PET/near-conflict behavior in the pilot but fails as an efficiency-improving final default. |
+| J1 selected `mr=3,gap=0.8,fw=0.3` | Historical screening candidate. It looked good in the compact joint sweep but failed the later E2-style re-screening safety/fairness check. |
 
 ## Completed Joint Sweep
 
@@ -150,9 +166,9 @@ The selected candidate reduced mean observed travel time from 57.40 s to 54.80 s
 
 This result did not justify a final 300 s confirmatory run with the exact selected candidate. The follow-up safety-constrained candidate screen tested four less aggressive or more regularized coalition variants while reusing the completed FCFS reference.
 
-## Current Balanced Candidate
+## Completed Safety-Constrained Candidate Screen
 
-The safety-constrained screen promotes S3 as the current balanced confirmatory candidate:
+The safety-constrained screen promoted S3 as the balanced candidate before the later 300 s pilots:
 
 ```text
 max_release_count = 2
@@ -301,7 +317,7 @@ adaptive cgap=4.0 min PET: 3.12 s
 
 P4 shows that increasing `adaptive_min_conflict_arrival_gap_s` alone does not repair the min-PET regression. The risky cases are likely passing the static conflict-route gate or being driven by a local entry-gap/PET condition not captured by the current route-conflict rule.
 
-After discussion, the current adaptive `cgap=2.4` candidate is still worth a confirmatory check because its min PET remains above 3.0 s while mean travel time and mean PET improve. The acceptance rule is fixed before running the larger pilot:
+After discussion, the current adaptive `cgap=2.4` candidate was still worth a confirmatory check because its aggregate min PET remained above 3.0 s while mean travel time and mean PET improved. The acceptance rule was fixed before running the larger pilot:
 
 ```text
 adaptive min_pet_s >= 3.0 s
@@ -313,7 +329,26 @@ adaptive throughput_arrived >= S3/W0 throughput
 
 See `docs/experiments/adaptive_confirmatory_acceptance_rule_20260618.md`.
 
-The next step is a 10-seed, 300 s confirmatory pilot for adaptive `cgap=2.4`. If it passes the rule, it becomes the current main method candidate. If min PET fails while efficiency passes, the next method step should add an explicit extra-release safety guard, such as a projected minimum entry-gap or projected-PET threshold across all already released vehicles.
+C1 completed the 10-seed, 300 s confirmatory pilot for adaptive `cgap=2.4`:
+
+```text
+FCFS throughput: 31.98
+adaptive throughput: 31.45
+
+FCFS mean travel time: 159.35 s
+adaptive mean travel time: 157.87 s
+
+FCFS near-conflict count: 0.53
+adaptive near-conflict count: 0.48
+
+FCFS min PET: 4.01 s
+adaptive min PET: 4.23 s
+
+FCFS mean PET: 90.18 s
+adaptive mean PET: 92.63 s
+```
+
+C1 passes the predefined aggregate acceptance rule, so adaptive `cgap=2.4` becomes the current main method candidate for the prototype evidence package. The result should still be framed carefully: it supports lower mean travel time, better aggregate PET, and slightly fewer near conflicts, but it does not support throughput superiority, waiting-fairness superiority, or a per-run PET guarantee.
 
 ## Remote Server Use
 
