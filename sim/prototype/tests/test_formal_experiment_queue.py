@@ -74,6 +74,7 @@ class FormalExperimentQueueTest(unittest.TestCase):
         self.assertEqual(jobs[0].params["max_release_count"], 2)
         self.assertEqual(jobs[0].params["safe_arrival_gap_s"], 0.8)
         self.assertEqual(jobs[0].params["fairness_weight"], 0.15)
+        self.assertEqual(jobs[0].params["cav_waiting_tiebreaker_weight"], 0.0)
         self.assertEqual(jobs[0].params["volumes"], ["medium", "high"])
         self.assertEqual(jobs[0].params["penetrations"], [0.5])
 
@@ -87,6 +88,7 @@ class FormalExperimentQueueTest(unittest.TestCase):
         self.assertEqual(payload["status"], "planned")
         self.assertEqual(payload["job_count"], 2)
         self.assertEqual(payload["jobs"][0]["job_id"], "E1_label_event_sanity")
+        self.assertIn("--cav-waiting-tiebreaker-weight 0.0", payload["jobs"][1]["command"])
         self.assertIn("TBD", payload["no_fabrication_note"])
 
     def test_run_selected_jobs_uses_backend_functions(self) -> None:

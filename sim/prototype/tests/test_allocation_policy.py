@@ -44,6 +44,39 @@ class AllocationPolicyTest(unittest.TestCase):
 
         self.assertEqual(decision.release_order[0], "patient")
 
+    def test_cav_waiting_tiebreaker_can_promote_long_waiting_cav(self) -> None:
+        vehicles = [
+            VehicleState("fast", "CAV", distance_to_center=15.0, speed=5.0, waiting_time=0.0),
+            VehicleState("patient", "CAV", distance_to_center=25.0, speed=5.0, waiting_time=18.0),
+        ]
+
+        decision = build_decision(
+            vehicles,
+            method="prediction_coalition",
+            fairness_weight=0.0,
+            cav_waiting_tiebreaker_weight=0.2,
+        )
+
+        self.assertEqual(decision.release_order[0], "patient")
+
+    def test_cav_waiting_tiebreaker_does_not_bypass_high_risk_hdv_gap(self) -> None:
+        vehicles = [
+            VehicleState("cav", "CAV", distance_to_center=10.0, speed=5.0, waiting_time=30.0),
+            VehicleState("hdv", "HDV", distance_to_center=11.0, speed=5.0, waiting_time=0.0, priority_probability=0.9),
+        ]
+
+        decision = build_decision(
+            vehicles,
+            method="prediction_coalition",
+            risk_threshold=0.7,
+            max_release_count=2,
+            safe_arrival_gap_s=1.0,
+            cav_waiting_tiebreaker_weight=0.2,
+        )
+
+        self.assertEqual(decision.release_vehicles, ["hdv"])
+        self.assertIn("cav", decision.hold_vehicles)
+
     def test_coalition_releases_multiple_low_conflict_cavs(self) -> None:
         vehicles = [
             VehicleState("cav_a", "CAV", distance_to_center=10.0, speed=5.0, waiting_time=0.0),

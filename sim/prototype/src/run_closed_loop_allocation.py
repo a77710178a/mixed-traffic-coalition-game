@@ -108,6 +108,7 @@ def run_closed_loop_allocation(
     fairness_weight: float,
     max_release_count: int,
     safe_arrival_gap_s: float,
+    cav_waiting_tiebreaker_weight: float,
     near_conflict_pet_s: float,
     priority_model: str | None = None,
     gui: bool = False,
@@ -157,6 +158,7 @@ def run_closed_loop_allocation(
                 fairness_weight=fairness_weight,
                 max_release_count=max_release_count,
                 safe_arrival_gap_s=safe_arrival_gap_s,
+                cav_waiting_tiebreaker_weight=cav_waiting_tiebreaker_weight,
             )
             actions = _apply_decision(traci, decision, candidates, hold_speed_mps, controlled_ids)
             min_ttc = _min_pairwise_ttc(candidates)
@@ -267,6 +269,7 @@ def run_closed_loop_allocation(
         "fairness_weight": fairness_weight,
         "max_release_count": max_release_count,
         "safe_arrival_gap_s": safe_arrival_gap_s,
+        "cav_waiting_tiebreaker_weight": cav_waiting_tiebreaker_weight,
         "near_conflict_pet_s": near_conflict_pet_s,
         "priority_model": priority_model or "",
         "priority_predictor_type": predictor_type,
@@ -314,6 +317,7 @@ def main() -> None:
     parser.add_argument("--fairness-weight", type=float, default=0.15)
     parser.add_argument("--max-release-count", type=int, default=3)
     parser.add_argument("--safe-arrival-gap-s", type=float, default=1.2)
+    parser.add_argument("--cav-waiting-tiebreaker-weight", type=float, default=0.0)
     parser.add_argument("--near-conflict-pet-s", type=float, default=1.5)
     parser.add_argument("--priority-model", default=None)
     parser.add_argument("--gui", action="store_true")
@@ -331,6 +335,7 @@ def main() -> None:
         fairness_weight=args.fairness_weight,
         max_release_count=args.max_release_count,
         safe_arrival_gap_s=args.safe_arrival_gap_s,
+        cav_waiting_tiebreaker_weight=args.cav_waiting_tiebreaker_weight,
         near_conflict_pet_s=args.near_conflict_pet_s,
         priority_model=args.priority_model,
         gui=args.gui,

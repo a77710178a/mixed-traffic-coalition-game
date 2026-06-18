@@ -46,13 +46,17 @@ def _prediction_coalition_score(
     risk_threshold: float,
     fairness_weight: float,
     hdv_priority_bonus: float,
+    cav_waiting_tiebreaker_weight: float,
 ) -> float:
     arrival = estimate_arrival_time(vehicle)
     fairness_credit = fairness_weight * max(0.0, float(vehicle.waiting_time))
+    cav_waiting_credit = 0.0
+    if vehicle.veh_class.upper() == "CAV":
+        cav_waiting_credit = cav_waiting_tiebreaker_weight * max(0.0, float(vehicle.waiting_time))
     risk_credit = 0.0
     if vehicle.veh_class.upper() == "HDV" and float(vehicle.priority_probability) >= risk_threshold:
         risk_credit = hdv_priority_bonus * float(vehicle.priority_probability)
-    return arrival - fairness_credit - risk_credit
+    return arrival - fairness_credit - cav_waiting_credit - risk_credit
 
 
 def _is_close_arrival(a: VehicleState, b: VehicleState, safe_arrival_gap_s: float) -> bool:
@@ -103,6 +107,7 @@ def build_decision(
     release_count: int = 1,
     max_release_count: int | None = None,
     safe_arrival_gap_s: float = 1.2,
+    cav_waiting_tiebreaker_weight: float = 0.0,
 ) -> AllocationDecision:
     if not vehicles:
         return AllocationDecision(release_order=[], hold_vehicles=[], scores={}, release_vehicles=[])
@@ -116,6 +121,9 @@ def build_decision(
                 risk_threshold=risk_threshold,
                 fairness_weight=fairness_weight if method == "prediction_coalition" else 0.0,
                 hdv_priority_bonus=hdv_priority_bonus,
+                cav_waiting_tiebreaker_weight=(
+                    cav_waiting_tiebreaker_weight if method == "prediction_coalition" else 0.0
+                ),
             )
             for vehicle in vehicles
         }

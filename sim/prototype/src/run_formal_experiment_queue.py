@@ -52,6 +52,7 @@ def _command(job: ExperimentJob) -> str:
             f"--fairness-weight {params['fairness_weight']} "
             f"--max-release-count {params['max_release_count']} "
             f"--safe-arrival-gap-s {params['safe_arrival_gap_s']} "
+            f"--cav-waiting-tiebreaker-weight {params['cav_waiting_tiebreaker_weight']} "
             f"--near-conflict-pet-s {params['near_conflict_pet_s']} "
             f"--output-name {params['output_name']}"
         )
@@ -188,6 +189,7 @@ def _closed_loop_params(
     fairness_weight: float = 0.15,
     max_release_count: int = 3,
     safe_arrival_gap_s: float = 1.2,
+    cav_waiting_tiebreaker_weight: float = 0.0,
 ) -> dict:
     return {
         "config_path": config_path,
@@ -202,6 +204,7 @@ def _closed_loop_params(
         "fairness_weight": fairness_weight,
         "max_release_count": max_release_count,
         "safe_arrival_gap_s": safe_arrival_gap_s,
+        "cav_waiting_tiebreaker_weight": cav_waiting_tiebreaker_weight,
         "near_conflict_pet_s": 1.5,
         "priority_model": None,
         "output_name": output_name,
