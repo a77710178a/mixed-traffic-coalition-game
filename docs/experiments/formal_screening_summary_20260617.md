@@ -301,7 +301,19 @@ adaptive cgap=4.0 min PET: 3.12 s
 
 P4 shows that increasing `adaptive_min_conflict_arrival_gap_s` alone does not repair the min-PET regression. The risky cases are likely passing the static conflict-route gate or being driven by a local entry-gap/PET condition not captured by the current route-conflict rule.
 
-Do not run the full 300 s, 10-seed confirmatory experiment yet. The next method step should add an explicit extra-release safety guard, such as a projected minimum entry-gap or projected-PET threshold across all already released vehicles.
+After discussion, the current adaptive `cgap=2.4` candidate is still worth a confirmatory check because its min PET remains above 3.0 s while mean travel time and mean PET improve. The acceptance rule is fixed before running the larger pilot:
+
+```text
+adaptive min_pet_s >= 3.0 s
+adaptive near_conflict_count <= FCFS near_conflict_count
+adaptive mean_pet_s > FCFS mean_pet_s
+adaptive mean_observed_travel_time_s < FCFS mean_observed_travel_time_s
+adaptive throughput_arrived >= S3/W0 throughput
+```
+
+See `docs/experiments/adaptive_confirmatory_acceptance_rule_20260618.md`.
+
+The next step is a 10-seed, 300 s confirmatory pilot for adaptive `cgap=2.4`. If it passes the rule, it becomes the current main method candidate. If min PET fails while efficiency passes, the next method step should add an explicit extra-release safety guard, such as a projected minimum entry-gap or projected-PET threshold across all already released vehicles.
 
 ## Remote Server Use
 
