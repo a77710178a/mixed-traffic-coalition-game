@@ -26,9 +26,10 @@ This summary consolidates completed screening experiments, mechanism pilots, and
 | R2 | 270 | Full-grid adaptive robustness run | `docs/experiments/formal_r2_full_grid_robustness_report_20260619.md` |
 | R3 | 30 | High-CAV coarse release-cap sensitivity | `docs/experiments/formal_r3_r4_high_cav_release_cap_report_20260619.md` |
 | R4 | 30 | High-CAV gated adaptive-cap sensitivity | `docs/experiments/formal_r3_r4_high_cav_release_cap_report_20260619.md` |
-| Total | 1184 | Screening, mechanism diagnosis, confirmatory, and robustness runs | this summary |
+| R5 | 30 | High-CAV adaptive-gate trigger sensitivity | `docs/experiments/formal_r5_adaptive_gate_trigger_report_20260619.md` |
+| Total | 1214 | Screening, mechanism diagnosis, confirmatory, and robustness runs | this summary |
 
-Runs through J1 were executed locally in the Codex workspace. R1, S1-S4, P1, P2, P3, P4, C1, R2, R3, and R4 were executed on the remote server under the remote-only policy for heavy simulations.
+Runs through J1 were executed locally in the Codex workspace. R1, S1-S4, P1, P2, P3, P4, C1, R2, R3, R4, and R5 were executed on the remote server under the remote-only policy for heavy simulations.
 
 ## What We Know
 
@@ -415,7 +416,30 @@ R3 coarse cap3/4 conflict pairs: 100.80
 R4 gated cap2/4 conflict pairs: 93.03
 ```
 
-The release-set logs explain the mechanism: R3 releases more than two vehicles in about 97.0% of decision steps, while R4 does so in only about 0.44% of decision steps. Therefore, R3 confirms that larger high-CAV release sets can recover efficiency, but the coarse base-cap increase weakens safety margins. R4 confirms that the current geometry-aware gate is safe but too hard to trigger. The next experiment should be R5 adaptive-gate trigger sensitivity: keep `base max_release_count=2`, keep `adaptive_max_release_count=4`, and vary gate eligibility rather than raising the base cap.
+The release-set logs explain the mechanism: R3 releases more than two vehicles in about 97.0% of decision steps, while R4 does so in only about 0.44% of decision steps. Therefore, R3 confirms that larger high-CAV release sets can recover efficiency, but the coarse base-cap increase weakens safety margins. R4 confirms that the current geometry-aware gate is safe but too hard to trigger.
+
+R5 then relaxed only the adaptive gate trigger:
+
+```text
+base max_release_count = 2
+adaptive_max_release_count = 4
+adaptive_max_occupancy = 1
+adaptive_min_conflict_arrival_gap_s = 3.6
+```
+
+High-CAV aggregate result:
+
+```text
+R5 throughput: 29.83
+R5 mean travel time: 149.08 s
+R5 min PET: 5.38 s
+R5 mean PET: 95.58 s
+R5 conflict pairs: 97.87
+R5 near conflicts: 0.30
+R5 release count > 2 share: 3.09%
+```
+
+R5 is a useful middle point: it recovers most of R3's efficiency while keeping much better min PET than R3, but it still increases conflict-pair and near-conflict counts relative to R2 adaptive. The next high-CAV refinement should be R6: keep `adaptive_max_occupancy=1` and `cgap=3.6`, but lower `adaptive_max_release_count` from 4 to 3 to reduce conflict load.
 
 ## Remote Server Use
 

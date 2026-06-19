@@ -196,7 +196,8 @@ Minimum figures for the experiment section:
 | P1 | Failure-case analysis | limitation credibility | medium | C1/R2 runs | main/appendix | no cases meet selection rule |
 | P1 | S3/W0 matched ablation expansion | mechanism explanation | high | R2 stable | appendix/main | adaptive no longer main candidate |
 | P1 | R3/R4 high-CAV release-cap sensitivity | CAV penetration mechanism | done | R2 high-CAV limitation | main/appendix | R3 recovered efficiency with thinner safety; R4 was too conservative |
-| P1 | R5 adaptive-gate trigger sensitivity | high-CAV mechanism refinement | medium | R3/R4 completed | appendix/main | trigger still too rare or PET worsens |
+| P1 | R5 adaptive-gate trigger sensitivity | high-CAV mechanism refinement | done | R3/R4 completed | appendix/main | improves efficiency but raises conflict load |
+| P1 | R6 lower adaptive cap trigger sensitivity | high-CAV safety-efficiency refinement | medium | R5 completed | appendix/main | efficiency collapses back to R4 or conflicts remain high |
 | P2 | Learned predictor closed-loop hook | deep-learning contribution | high | robustness stable and labels sufficient | main if positive | no improvement over heuristic |
 
 ## Claim Wording Guardrails
@@ -330,3 +331,64 @@ Decision rule:
 | Release count > 2 share | clearly above R4 0.44%, far below R3 97.0% |
 
 If this remains too conservative, test `adaptive_min_conflict_arrival_gap_s=2.4` with `adaptive_max_occupancy=1`. If safety worsens, add an explicit projected-PET guard before any full-grid run.
+
+R5 result report:
+
+```text
+docs/experiments/formal_r5_adaptive_gate_trigger_report_20260619.md
+```
+
+Key outcome:
+
+```text
+R5 base 2 / adaptive 4 / occupancy 1 / cgap 3.6:
+  throughput = 29.83
+  travel time = 149.08 s
+  min PET = 5.38 s
+  mean PET = 95.58 s
+  conflict pairs = 97.87
+  near conflicts = 0.30
+  release count > 2 in about 3.09% of decision steps
+```
+
+R5 is a genuine middle point between R3 and R4. It recovers most of the efficiency improvement while avoiding R3's large min-PET drop, but it still increases conflict-pair count and near-conflict count relative to R2 adaptive.
+
+## R6 Lower Adaptive-Cap Trigger Sensitivity
+
+Purpose: keep R5's more permissive occupancy trigger but reduce the maximum adaptive release set from 4 to 3.
+
+Workload:
+
+```text
+seeds = 1..10
+volumes = low, medium, high
+CAV penetration = 0.8
+methods = prediction_coalition
+duration = 300 s
+runs = 30
+```
+
+Candidate:
+
+```text
+max_release_count = 2
+adaptive_release_enabled = true
+adaptive_max_release_count = 3
+safe_arrival_gap_s = 1.2
+adaptive_min_conflict_arrival_gap_s = 3.6
+adaptive_max_occupancy = 1
+fairness_weight = 0.0
+cav_waiting_tiebreaker_weight = 0.1
+```
+
+Decision rule:
+
+| Check | Desired direction |
+| --- | --- |
+| Throughput vs R2 adaptive cap2/3 | increase |
+| Travel time vs R2 adaptive cap2/3 | decrease |
+| Conflict pairs vs R5 | decrease |
+| Near conflicts vs R5 | decrease or not increase |
+| Min PET vs R5 | not materially lower |
+
+If R6 gives a better conflict profile while retaining travel-time gain, use it as the high-CAV refinement candidate. If R6 collapses toward R4, the next step should be an explicit projected-PET guard rather than more scalar threshold tuning.
