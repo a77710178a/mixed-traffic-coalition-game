@@ -198,7 +198,7 @@ Minimum figures for the experiment section:
 | P1 | R3/R4 high-CAV release-cap sensitivity | CAV penetration mechanism | done | R2 high-CAV limitation | main/appendix | R3 recovered efficiency with thinner safety; R4 was too conservative |
 | P1 | R5 adaptive-gate trigger sensitivity | high-CAV mechanism refinement | done | R3/R4 completed | appendix/main | improves efficiency but raises conflict load |
 | P1 | R6 lower adaptive cap trigger sensitivity | high-CAV safety-efficiency refinement | done | R5 completed | appendix/main | conflicts remain high |
-| P1 | Projected-PET adaptive guard | safety-shaped high-CAV refinement | medium | R5/R6 completed | main/appendix | no efficiency recovery after guard |
+| P1 | Projected-PET adaptive guard | safety-shaped high-CAV refinement | done | R5/R6 completed | main/appendix | lower conflict load but partial efficiency rollback |
 | P2 | Learned predictor closed-loop hook | deep-learning contribution | high | robustness stable and labels sufficient | main if positive | no improvement over heuristic |
 
 ## Claim Wording Guardrails
@@ -447,3 +447,32 @@ Implementation requirements:
 - Do not claim final safety superiority unless near conflicts and conflict pairs improve relative to R5 without collapsing travel-time gain.
 
 Note: `projected_min_pet_s` should be larger than `adaptive_min_conflict_arrival_gap_s` in the first guard run; otherwise the existing conflict-arrival gap already dominates the new guard.
+
+R7 result report:
+
+```text
+docs/experiments/formal_r7_projected_pet_guard_report_20260619.md
+```
+
+Key outcome:
+
+```text
+R7 base 2 / adaptive 4 / occupancy 1 / cgap 3.6 / projected PET 4.0:
+  throughput = 29.30
+  travel time = 151.27 s
+  min PET = 5.25 s
+  mean PET = 94.78 s
+  conflict pairs = 95.10
+  near conflicts = 0.30
+  release count > 2 in about 2.58% of decision steps
+```
+
+Interpretation: R7 reduces conflict-pair count relative to R5 and R6, and it keeps a modest efficiency improvement over the R2 high-CAV adaptive baseline. However, it also gives back a noticeable part of R5/R6's travel-time and throughput recovery, and it does not improve near-conflict count relative to R5. The projected-PET guard is useful evidence that the high-CAV release mechanism needs a safety-shaped extra-release condition, but the current arrival-time proxy is not yet a clean final solution.
+
+Next mechanism diagnostic:
+
+```text
+Compare R5 and R7 decision steps where release count differs.
+For each sampled step, record route pair, estimated arrival times, conflict relation, actual entry/exit times, and realized PET.
+Use that case table to decide whether to refine the arrival-time proxy, the threshold, or the route conflict matrix.
+```

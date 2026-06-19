@@ -28,9 +28,10 @@ This summary consolidates completed screening experiments, mechanism pilots, and
 | R4 | 30 | High-CAV gated adaptive-cap sensitivity | `docs/experiments/formal_r3_r4_high_cav_release_cap_report_20260619.md` |
 | R5 | 30 | High-CAV adaptive-gate trigger sensitivity | `docs/experiments/formal_r5_adaptive_gate_trigger_report_20260619.md` |
 | R6 | 30 | High-CAV lower adaptive-cap boundary test | `docs/experiments/formal_r6_lower_adaptive_cap_report_20260619.md` |
-| Total | 1244 | Screening, mechanism diagnosis, confirmatory, and robustness runs | this summary |
+| R7 | 30 | High-CAV projected-PET adaptive guard | `docs/experiments/formal_r7_projected_pet_guard_report_20260619.md` |
+| Total | 1274 | Screening, mechanism diagnosis, confirmatory, and robustness runs | this summary |
 
-Runs through J1 were executed locally in the Codex workspace. R1, S1-S4, P1, P2, P3, P4, C1, R2, R3, R4, R5, and R6 were executed on the remote server under the remote-only policy for heavy simulations.
+Runs through J1 were executed locally in the Codex workspace. R1, S1-S4, P1, P2, P3, P4, C1, R2, R3, R4, R5, R6, and R7 were executed on the remote server under the remote-only policy for heavy simulations.
 
 ## What We Know
 
@@ -464,6 +465,30 @@ R6 release count > 2 share: 2.82%
 ```
 
 R6 is not cleaner than R5: it slightly improves efficiency but increases conflict-pair and near-conflict counts. This suggests scalar cap tuning has reached its useful boundary. The next method step should be a code-level projected-PET guard for adaptive extra releases, not another cap-only threshold sweep.
+
+R7 tested that projected-PET guard:
+
+```text
+base max_release_count = 2
+adaptive_max_release_count = 4
+adaptive_max_occupancy = 1
+adaptive_min_conflict_arrival_gap_s = 3.6
+projected_min_pet_s = 4.0
+```
+
+R7 result:
+
+```text
+R7 throughput: 29.30
+R7 mean travel time: 151.27 s
+R7 min PET: 5.25 s
+R7 mean PET: 94.78 s
+R7 conflict pairs: 95.10
+R7 near conflicts: 0.30
+R7 release count > 2 share: 2.58%
+```
+
+R7 confirms that an explicit projected-PET guard can reduce the conflict load introduced by R5/R6's more permissive high-CAV gate, but it gives back part of the efficiency recovery. It is therefore a useful safety-shaped mechanism diagnostic, not yet a dominating final high-CAV candidate. The next step should inspect decision-level cases where R5 and R7 differ, rather than running another cap-only sweep.
 
 ## Remote Server Use
 
