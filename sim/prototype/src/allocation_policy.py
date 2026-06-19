@@ -164,22 +164,27 @@ def _select_release_set(
 
     adaptive_cap = release_cap if adaptive_max_release_count is None else max(release_cap, int(adaptive_max_release_count))
     if adaptive_release_enabled and len(release) < adaptive_cap:
-        release_ids = {vehicle.veh_id for vehicle in release}
-        for vehicle in ordered:
-            if vehicle.veh_id in release_ids:
-                continue
-            if _can_adaptively_release(
-                candidate=vehicle,
-                release=release,
-                high_risk_hdvs=high_risk_hdvs,
-                risk_threshold=risk_threshold,
-                safe_arrival_gap_s=safe_arrival_gap_s,
-                adaptive_min_conflict_arrival_gap_s=adaptive_min_conflict_arrival_gap_s,
-                adaptive_max_occupancy=adaptive_max_occupancy,
-                conflict_zone_occupancy=conflict_zone_occupancy,
-                route_conflict_matrix=route_conflict_matrix,
-            ):
-                release.append(vehicle)
+        while len(release) < adaptive_cap:
+            release_ids = {vehicle.veh_id for vehicle in release}
+            added = False
+            for vehicle in ordered:
+                if vehicle.veh_id in release_ids:
+                    continue
+                if _can_adaptively_release(
+                    candidate=vehicle,
+                    release=release,
+                    high_risk_hdvs=high_risk_hdvs,
+                    risk_threshold=risk_threshold,
+                    safe_arrival_gap_s=safe_arrival_gap_s,
+                    adaptive_min_conflict_arrival_gap_s=adaptive_min_conflict_arrival_gap_s,
+                    adaptive_max_occupancy=adaptive_max_occupancy,
+                    conflict_zone_occupancy=conflict_zone_occupancy,
+                    route_conflict_matrix=route_conflict_matrix,
+                ):
+                    release.append(vehicle)
+                    added = True
+                    break
+            if not added:
                 break
     return [vehicle.veh_id for vehicle in release]
 
