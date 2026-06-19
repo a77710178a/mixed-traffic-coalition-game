@@ -24,9 +24,11 @@ This summary consolidates completed screening experiments, mechanism pilots, and
 | P4 | 48 | Adaptive conflict-gap sensitivity | `docs/experiments/formal_pilot_adaptive_gap_sensitivity_300s_report_20260618.md` |
 | C1 | 80 | Adaptive gate 300 s confirmatory run | `docs/experiments/formal_confirm_adaptive_gate_300s_report_20260618.md` |
 | R2 | 270 | Full-grid adaptive robustness run | `docs/experiments/formal_r2_full_grid_robustness_report_20260619.md` |
-| Total | 1124 | Screening, mechanism diagnosis, confirmatory, and robustness runs | this summary |
+| R3 | 30 | High-CAV coarse release-cap sensitivity | `docs/experiments/formal_r3_r4_high_cav_release_cap_report_20260619.md` |
+| R4 | 30 | High-CAV gated adaptive-cap sensitivity | `docs/experiments/formal_r3_r4_high_cav_release_cap_report_20260619.md` |
+| Total | 1184 | Screening, mechanism diagnosis, confirmatory, and robustness runs | this summary |
 
-Runs through J1 were executed locally in the Codex workspace. R1, S1-S4, P1, P2, P3, P4, C1, and R2 were executed on the remote server under the remote-only policy for heavy simulations.
+Runs through J1 were executed locally in the Codex workspace. R1, S1-S4, P1, P2, P3, P4, C1, R2, R3, and R4 were executed on the remote server under the remote-only policy for heavy simulations.
 
 ## What We Know
 
@@ -382,15 +384,38 @@ adaptive mean PET: 91.35 s
 
 R2 strengthens the efficiency and aggregate-PET evidence, but it weakens any simple safety-superiority wording because near-conflict count and conflict-pair count increase. CAV penetration sensitivity must be described carefully: 20% CAV penetration gives the largest relative efficiency gain because FCFS has more room for improvement, while 80% CAV penetration gives better absolute PET/near-conflict behavior but smaller efficiency gains because the current release cap cannot fully exploit the larger controllable CAV fleet.
 
-The next method experiment should be R3 high-CAV release-cap sensitivity:
+R3/R4 then tested the high-CAV release-cap mechanism:
 
 ```text
 penetration = 0.8
 volumes = low, medium, high
 seeds = 1..10
 duration = 300 s
-compare current cap base 2 / adaptive 3 against wider cap base 3 / adaptive 4
+R3: wider coarse cap base 3 / adaptive 4
+R4: conservative base 2 / adaptive 4 after fixing the gate to fill to adaptive_max_release_count
 ```
+
+High-CAV aggregate result:
+
+```text
+R2 adaptive cap2/3 throughput: 28.60
+R3 coarse cap3/4 throughput: 29.97
+R4 gated cap2/4 throughput: 28.70
+
+R2 adaptive cap2/3 mean travel time: 153.01 s
+R3 coarse cap3/4 mean travel time: 147.07 s
+R4 gated cap2/4 mean travel time: 152.74 s
+
+R2 adaptive cap2/3 min PET: 5.52 s
+R3 coarse cap3/4 min PET: 4.36 s
+R4 gated cap2/4 min PET: 5.51 s
+
+R2 adaptive cap2/3 conflict pairs: 93.07
+R3 coarse cap3/4 conflict pairs: 100.80
+R4 gated cap2/4 conflict pairs: 93.03
+```
+
+The release-set logs explain the mechanism: R3 releases more than two vehicles in about 97.0% of decision steps, while R4 does so in only about 0.44% of decision steps. Therefore, R3 confirms that larger high-CAV release sets can recover efficiency, but the coarse base-cap increase weakens safety margins. R4 confirms that the current geometry-aware gate is safe but too hard to trigger. The next experiment should be R5 adaptive-gate trigger sensitivity: keep `base max_release_count=2`, keep `adaptive_max_release_count=4`, and vary gate eligibility rather than raising the base cap.
 
 ## Remote Server Use
 

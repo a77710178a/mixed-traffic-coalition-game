@@ -195,7 +195,8 @@ Minimum figures for the experiment section:
 | P0 | Main comparison table | core result | low | C1/R2 outputs | main | inconsistent run settings |
 | P1 | Failure-case analysis | limitation credibility | medium | C1/R2 runs | main/appendix | no cases meet selection rule |
 | P1 | S3/W0 matched ablation expansion | mechanism explanation | high | R2 stable | appendix/main | adaptive no longer main candidate |
-| P1 | R3 high-CAV release-cap sensitivity | CAV penetration mechanism | medium | R2 high-CAV limitation | main/appendix | wider cap worsens safety without efficiency recovery |
+| P1 | R3/R4 high-CAV release-cap sensitivity | CAV penetration mechanism | done | R2 high-CAV limitation | main/appendix | R3 recovered efficiency with thinner safety; R4 was too conservative |
+| P1 | R5 adaptive-gate trigger sensitivity | high-CAV mechanism refinement | medium | R3/R4 completed | appendix/main | trigger still too rare or PET worsens |
 | P2 | Learned predictor closed-loop hook | deep-learning contribution | high | robustness stable and labels sufficient | main if positive | no improvement over heuristic |
 
 ## Claim Wording Guardrails
@@ -263,3 +264,69 @@ seed6_10 remote dir = /public/home/xiaohei_0/hx/my_paper01_paper_r3_cap34_seed6_
 seed1_5 launch pid = 15088
 seed6_10 launch pid = 15143
 ```
+
+R3/R4 result report:
+
+```text
+docs/experiments/formal_r3_r4_high_cav_release_cap_report_20260619.md
+```
+
+Key outcome:
+
+```text
+R3 coarse base 3 / adaptive 4:
+  throughput = 29.97
+  travel time = 147.07 s
+  min PET = 4.36 s
+  conflict pairs = 100.80
+  release count > 2 in about 97.0% of decision steps
+
+R4 gated base 2 / adaptive 4:
+  throughput = 28.70
+  travel time = 152.74 s
+  min PET = 5.51 s
+  conflict pairs = 93.03
+  release count > 2 in about 0.44% of decision steps
+```
+
+Interpretation: the high-CAV efficiency weakness is release-cap related, but the paper should not use a coarse base-cap increase as the final method. The next run should tune adaptive-gate trigger conditions while keeping the conservative base cap.
+
+## R5 Adaptive-Gate Trigger Sensitivity
+
+Purpose: find a middle ground between R3 and R4. Keep the base release cap conservative, but make the geometry-aware adaptive gate trigger often enough to use high-CAV controllability.
+
+Workload:
+
+```text
+seeds = 1..10
+volumes = low, medium, high
+CAV penetration = 0.8
+methods = prediction_coalition
+duration = 300 s
+runs = 30
+```
+
+Recommended first candidate:
+
+```text
+max_release_count = 2
+adaptive_release_enabled = true
+adaptive_max_release_count = 4
+safe_arrival_gap_s = 1.2
+adaptive_min_conflict_arrival_gap_s = 3.6
+adaptive_max_occupancy = 1
+fairness_weight = 0.0
+cav_waiting_tiebreaker_weight = 0.1
+```
+
+Decision rule:
+
+| Check | Desired direction |
+| --- | --- |
+| Throughput vs R2 adaptive cap2/3 | increase |
+| Travel time vs R2 adaptive cap2/3 | decrease |
+| Min PET vs R3 coarse cap3/4 | higher |
+| Conflict pairs vs R3 coarse cap3/4 | lower |
+| Release count > 2 share | clearly above R4 0.44%, far below R3 97.0% |
+
+If this remains too conservative, test `adaptive_min_conflict_arrival_gap_s=2.4` with `adaptive_max_occupancy=1`. If safety worsens, add an explicit projected-PET guard before any full-grid run.
