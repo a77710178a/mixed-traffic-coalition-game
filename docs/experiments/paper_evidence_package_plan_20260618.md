@@ -427,7 +427,7 @@ adaptive_release_enabled = true
 adaptive_max_release_count = 4
 adaptive_max_occupancy = 1
 adaptive_min_conflict_arrival_gap_s = 3.6
-projected_min_pet_s = 2.0
+projected_min_pet_s = 4.0
 ```
 
 Guard rule:
@@ -445,3 +445,5 @@ Implementation requirements:
 - Keep R5 as the comparison baseline.
 - Run a small 10-seed high-CAV batch after tests pass.
 - Do not claim final safety superiority unless near conflicts and conflict pairs improve relative to R5 without collapsing travel-time gain.
+
+Note: `projected_min_pet_s` should be larger than `adaptive_min_conflict_arrival_gap_s` in the first guard run; otherwise the existing conflict-arrival gap already dominates the new guard.

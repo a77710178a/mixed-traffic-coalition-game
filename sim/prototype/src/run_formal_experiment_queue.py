@@ -57,6 +57,7 @@ def _command(job: ExperimentJob) -> str:
             f"--adaptive-max-release-count {params['adaptive_max_release_count']} "
             f"--adaptive-min-conflict-arrival-gap-s {params['adaptive_min_conflict_arrival_gap_s']} "
             f"--adaptive-max-occupancy {params['adaptive_max_occupancy']} "
+            f"--projected-min-pet-s {params['projected_min_pet_s']} "
             f"--near-conflict-pet-s {params['near_conflict_pet_s']} "
             f"--output-name {params['output_name']}"
         )
@@ -198,6 +199,7 @@ def _closed_loop_params(
     adaptive_max_release_count: int | None = None,
     adaptive_min_conflict_arrival_gap_s: float = 2.4,
     adaptive_max_occupancy: int = 0,
+    projected_min_pet_s: float = 0.0,
 ) -> dict:
     adaptive_cap = max_release_count if adaptive_max_release_count is None else adaptive_max_release_count
     return {
@@ -218,6 +220,7 @@ def _closed_loop_params(
         "adaptive_max_release_count": adaptive_cap,
         "adaptive_min_conflict_arrival_gap_s": adaptive_min_conflict_arrival_gap_s,
         "adaptive_max_occupancy": adaptive_max_occupancy,
+        "projected_min_pet_s": projected_min_pet_s,
         "near_conflict_pet_s": 1.5,
         "priority_model": None,
         "output_name": output_name,

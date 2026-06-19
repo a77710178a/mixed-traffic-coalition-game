@@ -35,6 +35,7 @@ SUMMARY_FIELDS = [
     "adaptive_max_release_count",
     "adaptive_min_conflict_arrival_gap_s",
     "adaptive_max_occupancy",
+    "projected_min_pet_s",
     "priority_predictor_type",
     "state_rows",
     "decision_rows",
@@ -101,6 +102,7 @@ def run_batch(
     adaptive_max_release_count: int | None = None,
     adaptive_min_conflict_arrival_gap_s: float = 2.4,
     adaptive_max_occupancy: int = 0,
+    projected_min_pet_s: float = 0.0,
     near_conflict_pet_s: float = 1.5,
     priority_model: str | None = None,
     output_name: str = "closed_loop_pilot_seed7_9_low_medium_pen50",
@@ -132,6 +134,7 @@ def run_batch(
                         adaptive_max_release_count=adaptive_max_release_count,
                         adaptive_min_conflict_arrival_gap_s=adaptive_min_conflict_arrival_gap_s,
                         adaptive_max_occupancy=adaptive_max_occupancy,
+                        projected_min_pet_s=projected_min_pet_s,
                         near_conflict_pet_s=near_conflict_pet_s,
                         priority_model=priority_model,
                         gui=False,
@@ -164,6 +167,7 @@ def run_batch(
         "adaptive_max_release_count": adaptive_max_release_count,
         "adaptive_min_conflict_arrival_gap_s": adaptive_min_conflict_arrival_gap_s,
         "adaptive_max_occupancy": adaptive_max_occupancy,
+        "projected_min_pet_s": projected_min_pet_s,
         "near_conflict_pet_s": near_conflict_pet_s,
         "priority_model": priority_model or "",
         "run_count": len(rows),
@@ -194,6 +198,7 @@ def main() -> None:
     parser.add_argument("--adaptive-max-release-count", type=int, default=None)
     parser.add_argument("--adaptive-min-conflict-arrival-gap-s", type=float, default=2.4)
     parser.add_argument("--adaptive-max-occupancy", type=int, default=0)
+    parser.add_argument("--projected-min-pet-s", type=float, default=0.0)
     parser.add_argument("--near-conflict-pet-s", type=float, default=1.5)
     parser.add_argument("--priority-model", default=None)
     parser.add_argument("--output-name", default="closed_loop_pilot_seed7_9_low_medium_pen50")
@@ -217,6 +222,7 @@ def main() -> None:
         adaptive_max_release_count=args.adaptive_max_release_count,
         adaptive_min_conflict_arrival_gap_s=args.adaptive_min_conflict_arrival_gap_s,
         adaptive_max_occupancy=args.adaptive_max_occupancy,
+        projected_min_pet_s=args.projected_min_pet_s,
         near_conflict_pet_s=args.near_conflict_pet_s,
         priority_model=args.priority_model,
         output_name=args.output_name,

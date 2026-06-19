@@ -129,6 +129,7 @@ def run_closed_loop_allocation(
     adaptive_max_release_count: int | None = None,
     adaptive_min_conflict_arrival_gap_s: float = 2.4,
     adaptive_max_occupancy: int = 0,
+    projected_min_pet_s: float = 0.0,
     near_conflict_pet_s: float = 1.5,
     priority_model: str | None = None,
     gui: bool = False,
@@ -187,6 +188,7 @@ def run_closed_loop_allocation(
                 adaptive_max_release_count=adaptive_max_release_count,
                 adaptive_min_conflict_arrival_gap_s=adaptive_min_conflict_arrival_gap_s,
                 adaptive_max_occupancy=adaptive_max_occupancy,
+                projected_min_pet_s=projected_min_pet_s,
                 conflict_zone_occupancy=_conflict_zone_occupancy(candidates, zone_radius_m),
                 route_conflict_matrix=route_conflict_matrix,
             )
@@ -304,6 +306,7 @@ def run_closed_loop_allocation(
         "adaptive_max_release_count": adaptive_max_release_count,
         "adaptive_min_conflict_arrival_gap_s": adaptive_min_conflict_arrival_gap_s,
         "adaptive_max_occupancy": adaptive_max_occupancy,
+        "projected_min_pet_s": projected_min_pet_s,
         "near_conflict_pet_s": near_conflict_pet_s,
         "priority_model": priority_model or "",
         "priority_predictor_type": predictor_type,
@@ -356,6 +359,7 @@ def main() -> None:
     parser.add_argument("--adaptive-max-release-count", type=int, default=None)
     parser.add_argument("--adaptive-min-conflict-arrival-gap-s", type=float, default=2.4)
     parser.add_argument("--adaptive-max-occupancy", type=int, default=0)
+    parser.add_argument("--projected-min-pet-s", type=float, default=0.0)
     parser.add_argument("--near-conflict-pet-s", type=float, default=1.5)
     parser.add_argument("--priority-model", default=None)
     parser.add_argument("--gui", action="store_true")
@@ -378,6 +382,7 @@ def main() -> None:
         adaptive_max_release_count=args.adaptive_max_release_count,
         adaptive_min_conflict_arrival_gap_s=args.adaptive_min_conflict_arrival_gap_s,
         adaptive_max_occupancy=args.adaptive_max_occupancy,
+        projected_min_pet_s=args.projected_min_pet_s,
         near_conflict_pet_s=args.near_conflict_pet_s,
         priority_model=args.priority_model,
         gui=args.gui,

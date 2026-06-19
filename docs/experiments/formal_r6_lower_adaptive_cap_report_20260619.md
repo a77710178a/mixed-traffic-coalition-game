@@ -126,7 +126,7 @@ base max_release_count = 2
 adaptive_max_release_count = 4
 adaptive_max_occupancy = 1
 adaptive_min_conflict_arrival_gap_s = 3.6
-projected_min_pet_s = 2.0
+projected_min_pet_s = 4.0
 ```
 
-This should be implemented as a code-level guard and unit-tested before launching another remote batch. R5 remains the best current high-CAV efficiency diagnostic, but it is not a final safety-clean method.
+This should be implemented as a code-level guard and unit-tested before launching another remote batch. The first guard threshold should be larger than `adaptive_min_conflict_arrival_gap_s`; otherwise the existing conflict-arrival gap already dominates the new guard. R5 remains the best current high-CAV efficiency diagnostic, but it is not a final safety-clean method.

@@ -98,6 +98,7 @@ def _can_adaptively_release(
     adaptive_max_occupancy: int,
     conflict_zone_occupancy: int,
     route_conflict_matrix: dict | None,
+    projected_min_pet_s: float,
 ) -> bool:
     if candidate.veh_class.upper() != "CAV":
         return False
@@ -114,6 +115,9 @@ def _can_adaptively_release(
     for selected in release:
         relation_conflicts = _route_relation_conflicts(route_conflict_matrix, candidate.route_id, selected.route_id)
         if relation_conflicts is None:
+            return False
+        projected_pet = abs(estimate_arrival_time(candidate) - estimate_arrival_time(selected))
+        if relation_conflicts and projected_pet < float(projected_min_pet_s):
             return False
         if relation_conflicts and _is_close_arrival(candidate, selected, adaptive_min_conflict_arrival_gap_s):
             return False
@@ -132,6 +136,7 @@ def _select_release_set(
     adaptive_max_occupancy: int,
     conflict_zone_occupancy: int,
     route_conflict_matrix: dict | None,
+    projected_min_pet_s: float,
 ) -> list[str]:
     if not ordered:
         return []
@@ -180,6 +185,7 @@ def _select_release_set(
                     adaptive_max_occupancy=adaptive_max_occupancy,
                     conflict_zone_occupancy=conflict_zone_occupancy,
                     route_conflict_matrix=route_conflict_matrix,
+                    projected_min_pet_s=projected_min_pet_s,
                 ):
                     release.append(vehicle)
                     added = True
@@ -205,6 +211,7 @@ def build_decision(
     adaptive_max_occupancy: int = 0,
     conflict_zone_occupancy: int = 0,
     route_conflict_matrix: dict | None = None,
+    projected_min_pet_s: float = 0.0,
 ) -> AllocationDecision:
     if not vehicles:
         return AllocationDecision(release_order=[], hold_vehicles=[], scores={}, release_vehicles=[])
@@ -249,6 +256,7 @@ def build_decision(
         adaptive_max_occupancy=adaptive_max_occupancy,
         conflict_zone_occupancy=conflict_zone_occupancy,
         route_conflict_matrix=route_conflict_matrix,
+        projected_min_pet_s=projected_min_pet_s,
     )
     release_set = set(release_vehicles)
     hold_vehicles = [veh_id for veh_id in release_order if veh_id not in release_set]
