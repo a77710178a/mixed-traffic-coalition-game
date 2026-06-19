@@ -27,9 +27,10 @@ This summary consolidates completed screening experiments, mechanism pilots, and
 | R3 | 30 | High-CAV coarse release-cap sensitivity | `docs/experiments/formal_r3_r4_high_cav_release_cap_report_20260619.md` |
 | R4 | 30 | High-CAV gated adaptive-cap sensitivity | `docs/experiments/formal_r3_r4_high_cav_release_cap_report_20260619.md` |
 | R5 | 30 | High-CAV adaptive-gate trigger sensitivity | `docs/experiments/formal_r5_adaptive_gate_trigger_report_20260619.md` |
-| Total | 1214 | Screening, mechanism diagnosis, confirmatory, and robustness runs | this summary |
+| R6 | 30 | High-CAV lower adaptive-cap boundary test | `docs/experiments/formal_r6_lower_adaptive_cap_report_20260619.md` |
+| Total | 1244 | Screening, mechanism diagnosis, confirmatory, and robustness runs | this summary |
 
-Runs through J1 were executed locally in the Codex workspace. R1, S1-S4, P1, P2, P3, P4, C1, R2, R3, R4, and R5 were executed on the remote server under the remote-only policy for heavy simulations.
+Runs through J1 were executed locally in the Codex workspace. R1, S1-S4, P1, P2, P3, P4, C1, R2, R3, R4, R5, and R6 were executed on the remote server under the remote-only policy for heavy simulations.
 
 ## What We Know
 
@@ -440,6 +441,29 @@ R5 release count > 2 share: 3.09%
 ```
 
 R5 is a useful middle point: it recovers most of R3's efficiency while keeping much better min PET than R3, but it still increases conflict-pair and near-conflict counts relative to R2 adaptive. The next high-CAV refinement should be R6: keep `adaptive_max_occupancy=1` and `cgap=3.6`, but lower `adaptive_max_release_count` from 4 to 3 to reduce conflict load.
+
+R6 tested that lower adaptive cap:
+
+```text
+base max_release_count = 2
+adaptive_max_release_count = 3
+adaptive_max_occupancy = 1
+adaptive_min_conflict_arrival_gap_s = 3.6
+```
+
+R6 result:
+
+```text
+R6 throughput: 30.00
+R6 mean travel time: 148.73 s
+R6 min PET: 5.31 s
+R6 mean PET: 95.25 s
+R6 conflict pairs: 99.30
+R6 near conflicts: 0.37
+R6 release count > 2 share: 2.82%
+```
+
+R6 is not cleaner than R5: it slightly improves efficiency but increases conflict-pair and near-conflict counts. This suggests scalar cap tuning has reached its useful boundary. The next method step should be a code-level projected-PET guard for adaptive extra releases, not another cap-only threshold sweep.
 
 ## Remote Server Use
 

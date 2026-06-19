@@ -197,7 +197,8 @@ Minimum figures for the experiment section:
 | P1 | S3/W0 matched ablation expansion | mechanism explanation | high | R2 stable | appendix/main | adaptive no longer main candidate |
 | P1 | R3/R4 high-CAV release-cap sensitivity | CAV penetration mechanism | done | R2 high-CAV limitation | main/appendix | R3 recovered efficiency with thinner safety; R4 was too conservative |
 | P1 | R5 adaptive-gate trigger sensitivity | high-CAV mechanism refinement | done | R3/R4 completed | appendix/main | improves efficiency but raises conflict load |
-| P1 | R6 lower adaptive cap trigger sensitivity | high-CAV safety-efficiency refinement | medium | R5 completed | appendix/main | efficiency collapses back to R4 or conflicts remain high |
+| P1 | R6 lower adaptive cap trigger sensitivity | high-CAV safety-efficiency refinement | done | R5 completed | appendix/main | conflicts remain high |
+| P1 | Projected-PET adaptive guard | safety-shaped high-CAV refinement | medium | R5/R6 completed | main/appendix | no efficiency recovery after guard |
 | P2 | Learned predictor closed-loop hook | deep-learning contribution | high | robustness stable and labels sufficient | main if positive | no improvement over heuristic |
 
 ## Claim Wording Guardrails
@@ -392,3 +393,55 @@ Decision rule:
 | Min PET vs R5 | not materially lower |
 
 If R6 gives a better conflict profile while retaining travel-time gain, use it as the high-CAV refinement candidate. If R6 collapses toward R4, the next step should be an explicit projected-PET guard rather than more scalar threshold tuning.
+
+R6 result report:
+
+```text
+docs/experiments/formal_r6_lower_adaptive_cap_report_20260619.md
+```
+
+Key outcome:
+
+```text
+R6 base 2 / adaptive 3 / occupancy 1 / cgap 3.6:
+  throughput = 30.00
+  travel time = 148.73 s
+  min PET = 5.31 s
+  mean PET = 95.25 s
+  conflict pairs = 99.30
+  near conflicts = 0.37
+  release count > 2 in about 2.82% of decision steps
+```
+
+Interpretation: R6 does not improve the safety profile relative to R5. Lowering the adaptive cap from 4 to 3 slightly improves efficiency but increases conflict-pair and near-conflict counts. More scalar cap tuning is unlikely to solve the mechanism.
+
+## Projected-PET Adaptive Guard
+
+Purpose: keep the high-CAV efficiency recovery from R5 but prevent unsafe extra releases with a direct projected-PET check.
+
+Initial design:
+
+```text
+base max_release_count = 2
+adaptive_release_enabled = true
+adaptive_max_release_count = 4
+adaptive_max_occupancy = 1
+adaptive_min_conflict_arrival_gap_s = 3.6
+projected_min_pet_s = 2.0
+```
+
+Guard rule:
+
+```text
+For every candidate extra CAV and every already released vehicle:
+  if their route pair conflicts:
+    estimate both arrival times to the conflict zone
+    require abs(candidate_arrival - released_arrival) >= projected_min_pet_s
+```
+
+Implementation requirements:
+
+- Add policy-level unit tests before code changes.
+- Keep R5 as the comparison baseline.
+- Run a small 10-seed high-CAV batch after tests pass.
+- Do not claim final safety superiority unless near conflicts and conflict pairs improve relative to R5 without collapsing travel-time gain.
